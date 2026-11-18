@@ -72,10 +72,14 @@ export function GitModal({ onClose }) {
         <button class="btn primary" disabled=${busy} onClick=${() => act(() => api('/api/git/init', { method: 'POST' }))}>Initialise Git repository</button>`
       : html`<div class="row between"><div><b>⎇ ${g.branch}</b> <span class="muted small">${g.remote || 'no remote yet — connect GitHub with: git remote add origin <url>'}</span></div></div>
         <h3 style="margin:14px 0 6px">Changes (${g.changes.length})</h3>
-        <div style="max-height:260px;overflow:auto"><table>${g.changes.map((c) => html`<tr><td style="width:40px"><span class="badge">${c.status}</span></td><td class="mono small">${c.file}</td></tr>`)}</table></div>
+        <div style="max-height:260px;overflow:auto"><table>${g.changes.map((c) => html`<tr style=${c.commit ? '' : 'opacity:.6'} title=${c.reason ?? ''}>
+          <td style="width:40px"><span class="badge">${c.status}</span></td>
+          <td class="mono small">${c.file}</td>
+          <td class="small" style="width:150px">${c.commit ? html`<span>Will be committed</span>` : c.blocked ? html`<span style="color:var(--critical);font-weight:600">Blocked</span>` : html`<span class="muted">Use your Git client</span>`}</td></tr>`)}</table></div>
+        ${g.changes.some((c) => c.blocked) && html`<div class="info" style="margin-top:8px">${g.changes.filter((c) => c.blocked).map((c) => html`<div class="small"><span class="mono">${c.file}</span>: ${c.reason}</div>`)}</div>`}
         ${!g.changes.length && html`<div class="muted small">Nothing to commit.</div>`}
         ${g.changes.length > 0 && html`<div class="row" style="margin-top:12px"><${Field} label="Commit message" style="flex:3"><input type="text" value=${msg} onInput=${(e) => setMsg(e.target.value)} placeholder="Add patient form cases" /></${Field}>
-          <div style="flex:0;margin-bottom:10px"><button class="btn primary" disabled=${busy || !msg.trim()} onClick=${() => act(async () => { await api('/api/git/commit', { method: 'POST', body: { message: msg } }); setMsg(''); toast('Committed ✔'); })}>Commit</button></div></div>
-          <div class="hint">Secret files are blocked automatically. Push / pull and branches come in a later phase — use your Git client meanwhile.</div>`}`}
+          <div style="flex:0;margin-bottom:10px"><button class="btn primary" disabled=${busy || !msg.trim() || !g.changes.some((c) => c.commit) || g.changes.some((c) => c.blocked)} onClick=${() => act(async () => { const r = await api('/api/git/commit', { method: 'POST', body: { message: msg } }); setMsg(''); toast(r.left ? `Committed ${r.committed} file(s); ${r.left} left for your Git client` : `Committed ${r.committed} file(s) ✔`); })}>Commit</button></div></div>
+          <div class="hint">The panel commits project files only (apps/, branding/). Files with passwords or keys are blocked. Code and settings changes, push / pull and branches: use your Git client.</div>`}`}
   </${Modal}>`;
 }

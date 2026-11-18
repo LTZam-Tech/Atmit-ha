@@ -32,6 +32,7 @@ import AdmZip from 'adm-zip';
 import { generateProject } from '../src/core/export/codegen';
 import { checkPages } from '../src/core/page-check';
 import { checkRequest, SECURITY_HEADERS } from './security';
+import { parsePorcelainZ, planCommit } from './git-guard';
 
 const PORT = Number(process.env.PANEL_PORT ?? 4400);
 const PW_CLI = path.join(ROOT, 'node_modules/@playwright/test/cli.js');
@@ -557,7 +558,12 @@ function git(args: string[]) {
 function gitStatus() {
   try { git(['rev-parse', '--is-inside-work-tree']); } catch { return { repo: false }; }
   const branch = (() => { try { return git(['rev-parse', '--abbrev-ref', 'HEAD']); } catch { return '(no commits yet)'; } })();
-  const changes = git(['status', '--porcelain']).split('\n').filter(Boolean).map((l) => ({ status: l.slice(0, 2).trim(), file: l.slice(3) }));
+  const plan = gitPlan();
+  const changes = [
+    ...plan.commit.map((c) => ({ status: c.status.trim(), file: c.file, commit: true })),
+    ...plan.blocked.map((b) => ({ status: b.change.status.trim(), file: b.change.file, commit: false, blocked: true, reason: b.reason })),
+    ...plan.skipped.map((s) => ({ status: s.change.status.trim(), file: s.change.file, commit: false, reason: s.reason })),
+  ];
   const remote = (() => { try { return git(['remote', 'get-url', 'origin']); } catch { return ''; } })();
   return { repo: true, branch, changes, remote };
 }
@@ -566,19 +572,48 @@ function gitInit() {
   git(['init', '-b', 'main']);
   return gitStatus();
 }
+/** passwords and keys from every project's secrets.yml — finding one in a committed file is a leak */
+function knownSecrets(): string[] {
+  const out: string[] = [];
+  const walk = (v: unknown, key = '') => {
+    if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
+    else if (typeof v === 'string' && /pass|secret|token|key/i.test(key) && !/^\$\{\w+\}$/.test(v)) out.push(v);
+  };
+  for (const app of listApps()) {
+    const f = path.join(appDir(app), 'secrets.yml');
+    if (fs.existsSync(f)) { try { walk(YAML.parse(fs.readFileSync(f, 'utf8'))); } catch { /* unreadable secrets file: nothing to compare */ } }
+  }
+  return out;
+}
+const readWorkspaceText = (file: string) => {
+  try { const b = fs.readFileSync(path.join(ROOT, file)); return b.includes(0) ? undefined : b.toString('utf8'); } catch { return undefined; }
+};
+function gitPlan() {
+  const out = execFileSync('git', ['status', '--porcelain=v1', '-z', '-uall'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return planCommit(parsePorcelainZ(out), readWorkspaceText, knownSecrets());
+}
 function gitCommit(message: string) {
   if (!message?.trim()) throw new Error('Write a commit message');
-  git(['add', '-A']);
-  const staged = git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
-  const leaked = staged.filter((f) => /secrets\.ya?ml$|\.env(\.|$)|\.auth\//.test(f));
-  if (leaked.length) { git(['reset', '-q']); throw new Error(`Blocked: secret files would be committed (${leaked.join(', ')}). Check .gitignore.`); }
-  if (!staged.length) throw new Error('Nothing to commit');
-  try { git(['commit', '-m', message]); } catch (e) {
+  const plan = gitPlan();
+  if (plan.blocked.length) throw new Error(`Blocked, nothing committed: ${plan.blocked.map((b) => `${b.change.file} (${b.reason})`).join('; ')}`);
+  if (!plan.commit.length) throw new Error(plan.skipped.length ? 'Nothing to commit in project files (apps/, branding/). The other changes need your Git client.' : 'Nothing to commit');
+  // stage and commit exactly these paths (literal pathspecs, NUL-separated, no command-line length limit)
+  const paths = plan.commit.flatMap((c) => (c.from ? [c.from, c.file] : [c.file]));
+  const list = path.join(os.tmpdir(), `atimtha-commit-${process.pid}-${Date.now()}.txt`);
+  fs.writeFileSync(list, paths.join('\0'));
+  const env = { ...process.env, GIT_LITERAL_PATHSPECS: '1' };
+  const run = (args: string[]) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env }).trim();
+  try {
+    run(['add', `--pathspec-from-file=${list}`, '--pathspec-file-nul']);
+    run(['commit', '-m', message, `--pathspec-from-file=${list}`, '--pathspec-file-nul']);
+  } catch (e) {
     const msg = (e as { stderr?: string }).stderr ?? String(e);
     if (/user\.(name|email)|Please tell me who you are/i.test(msg)) throw new Error('Git does not know who you are yet. Run once: git config --global user.name "Your Name" && git config --global user.email you@company.com');
     throw new Error(msg);
+  } finally {
+    fs.rmSync(list, { force: true });
   }
-  return gitStatus();
+  return { ...gitStatus(), committed: plan.commit.length, left: plan.skipped.length };
 }
 
 function exportProject(app: string): Buffer {

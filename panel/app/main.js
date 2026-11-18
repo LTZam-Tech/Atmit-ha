@@ -77,15 +77,16 @@ function TopBar() {
   const s = useStore();
   const [modal, setModal] = useState(null);
   const g = s.git;
+  // the modals sit next to the bar, not inside it: the bar's backdrop-filter would trap their fixed position in 52 px
   return html`<div class="topbar">
     <span class="status ${s.running ? 'running' : ''}"><span class="led"></span>${s.running ? s.running.label : t('Idle')}</span>
     ${s.running && html`<button class="btn danger sm" onClick=${() => api('/api/stop', { method: 'POST' })}>■ ${t('Stop')}</button>`}
     <span class="grow"></span>
     ${g && html`<button class="chipbtn" title="Git" onClick=${() => setModal('git')} data-noi18n>${g.repo ? `⎇ ${g.branch} · ${g.changes.length}` : '⎇ —'}</button>`}
     <button class="chipbtn iconbtn" title=${t('Theme')} aria-label=${t('Theme')} onClick=${() => { const c = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = c === 'dark' ? 'light' : 'dark'; }}>${I(html`<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/>`)}</button>
-    ${modal === 'brand' && html`<${BrandingModal} onClose=${() => setModal(null)} />`}
-    ${modal === 'git' && html`<${GitModal} onClose=${() => setModal(null)} />`}
-  </div>`;
+  </div>
+  ${modal === 'brand' && html`<${BrandingModal} onClose=${() => setModal(null)} />`}
+  ${modal === 'git' && html`<${GitModal} onClose=${() => setModal(null)} />`}`;
 }
 
 function ProjectView() {

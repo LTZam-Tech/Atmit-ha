@@ -24,6 +24,7 @@ jobs:
       - run: npm run validate
         env: { APP: '${{ inputs.app || 'demo' }}' }
       - run: npm run test:unit
+      - run: npm run test:integration
       - run: npx playwright test --shard=${{ matrix.shard }} ${{ inputs.grep && format('--grep {0}', inputs.grep) || '' }}
         env:
           CI: 'true'
