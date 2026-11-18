@@ -1,0 +1,427 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: en
+url: /en/
+description: Found while exploring on 2026-11-11
+readyWhen: intelligentSystemsBuiltOn
+settings:
+  timeout: 10000
+elements:
+  iltizamTechHome:
+    role: link
+    name: IltizamTech home
+    exact: true
+    fallback:
+      - label: IltizamTech home
+      - css: a.brand
+    control: link
+    href: /en/#top
+  services:
+    xpath: //body/header/div/nav/a[1]
+    control: link
+    href: /en/#services
+  products:
+    xpath: //body/header/div/nav/a[2]
+    control: link
+    href: /en/#products
+  howWeWork:
+    role: link
+    name: How we work
+    exact: true
+    fallback:
+      - xpath: //body/header/div/nav/a[3]
+    control: link
+    href: /en/#process
+  whyUs:
+    role: link
+    name: Why us
+    exact: true
+    fallback:
+      - text: Why us
+        exact: true
+      - xpath: //body/header/div/nav/a[4]
+    control: link
+    href: /en/#why
+  contact:
+    xpath: //body/header/div/nav/a[5]
+    control: link
+    href: /en/#contact
+  langBtn:
+    role: button
+    name: التبديل إلى العربية
+    exact: true
+    fallback:
+      - label: التبديل إلى العربية
+      - id: langBtn
+    control: button
+  letSTalk:
+    role: link
+    name: Let's talk
+    exact: true
+    fallback:
+      - text: Let's talk
+        exact: true
+      - xpath: //body/header/div/div/a
+    control: link
+    href: /en/#contact
+  intelligentSystemsBuiltOn:
+    css: h1.reveal.d1
+    fallback:
+      - xpath: //body/main/section[1]/div[1]/div[1]/h1
+    control: heading
+  exploreInspectZ:
+    role: link
+    name: Explore InspectZ
+    exact: true
+    fallback:
+      - text: Explore InspectZ
+        exact: true
+      - xpath: //body/main/section[1]/div[1]/div[1]/div[2]/a[1]
+    control: link
+    href: /en/#product
+  ourServices:
+    role: link
+    name: Our services
+    exact: true
+    fallback:
+      - text: Our services
+        exact: true
+      - xpath: //body/main/section[1]/div[1]/div[1]/div[2]/a[2]
+    control: link
+    href: /en/#services
+  fourDisciplinesOneCommitment:
+    role: heading
+    name: Four disciplines. One commitment.
+    exact: true
+    fallback:
+      - text: Four disciplines. One commitment.
+        exact: true
+      - xpath: //body/main/section[2]/div/div[1]/h2
+    control: heading
+  aiSolutions:
+    role: heading
+    name: AI Solutions
+    exact: true
+    fallback:
+      - text: AI Solutions
+        exact: true
+      - xpath: //body/main/section[2]/div/div[2]/article[1]/div[1]/h3
+    control: heading
+  siteReliabilityEngineering:
+    role: heading
+    name: Site Reliability Engineering
+    exact: true
+    fallback:
+      - text: Site Reliability Engineering
+        exact: true
+      - xpath: //body/main/section[2]/div/div[2]/article[2]/h3
+    control: heading
+  softwareDevelopment:
+    role: heading
+    name: Software Development
+    exact: true
+    fallback:
+      - text: Software Development
+        exact: true
+      - xpath: //body/main/section[2]/div/div[2]/article[3]/h3
+    control: heading
+  digitalTransformation:
+    role: heading
+    name: Digital Transformation
+    exact: true
+    fallback:
+      - text: Digital Transformation
+        exact: true
+      - xpath: //body/main/section[2]/div/div[2]/article[4]/div[1]/h3
+    control: heading
+  productsBuiltForThe:
+    role: heading
+    name: Products built for the region's institutions
+    exact: true
+    fallback:
+      - text: Products built for the region's institutions
+        exact: true
+      - xpath: //body/main/section[3]/div/div[1]/h2
+    control: heading
+  all:
+    role: button
+    name: All
+    exact: true
+    fallback:
+      - css: button.pf-filter.on
+      - xpath: //body/main/section[3]/div/div[2]/button[1]
+    control: button
+  governmentRegulators:
+    role: button
+    name: Government & regulators
+    exact: true
+    fallback:
+      - text: Government & regulators
+        exact: true
+      - xpath: //body/main/section[3]/div/div[2]/button[2]
+    control: button
+  education:
+    role: button
+    name: Education
+    exact: true
+    fallback:
+      - text: Education
+        exact: true
+      - xpath: //body/main/section[3]/div/div[2]/button[3]
+    control: button
+  artificialIntelligence:
+    role: button
+    name: Artificial intelligence
+    exact: true
+    fallback:
+      - text: Artificial intelligence
+        exact: true
+      - xpath: //body/main/section[3]/div/div[2]/button[4]
+    control: button
+  inspectZ:
+    role: heading
+    name: InspectZ
+    exact: true
+    fallback:
+      - css: h3.ltr
+      - xpath: //body/main/section[3]/div/div[3]/article[1]/div[1]/div/h3
+    control: heading
+  exploreTheInspectZ:
+    role: link
+    name: Explore the InspectZ ecosystem
+    exact: true
+    fallback:
+      - text: Explore the InspectZ ecosystem
+        exact: true
+      - css: a.pf-link
+    control: link
+    href: /en/#ecosystem
+  qiyas:
+    role: heading
+    name: Qiyas
+    exact: true
+    fallback:
+      - text: Qiyas
+        exact: true
+      - xpath: //body/main/section[3]/div/div[3]/article[2]/div[1]/div/h3
+    control: heading
+  universityInnovationPortal:
+    role: heading
+    name: University Innovation Portal
+    exact: true
+    fallback:
+      - text: University Innovation Portal
+        exact: true
+      - xpath: //body/main/section[3]/div/div[3]/article[3]/div[1]/div/h3
+    control: heading
+  employeeCertificatePortal:
+    role: heading
+    name: Employee Certificate Portal
+    exact: true
+    fallback:
+      - text: Employee Certificate Portal
+        exact: true
+      - xpath: //body/main/section[3]/div/div[3]/article[4]/div[1]/div/h3
+    control: heading
+  howWeBuildRag:
+    role: heading
+    name: How we build RAG systems institutions can trust
+    exact: true
+    fallback:
+      - text: How we build RAG systems institutions can trust
+        exact: true
+      - xpath: //body/main/section[4]/div/div[1]/h2
+    control: heading
+  el11StepsBehindEvery:
+    role: heading
+    name: 11 steps behind every answer
+    exact: true
+    fallback:
+      - text: 11 steps behind every answer
+        exact: true
+      - xpath: //body/main/section[4]/div/div[2]/div[1]/h3
+    control: heading
+  rankedByAuthorityNot:
+    role: heading
+    name: Ranked by authority, not only by similarity
+    exact: true
+    fallback:
+      - text: Ranked by authority, not only by similarity
+        exact: true
+      - xpath: //body/main/section[4]/div/div[2]/div[2]/div[1]/h3
+    control: heading
+  itShowsConflictsInstead:
+    role: heading
+    name: It shows conflicts instead of blending them
+    exact: true
+    fallback:
+      - text: It shows conflicts instead of blending them
+        exact: true
+      - xpath: //body/main/section[4]/div/div[2]/div[2]/div[2]/h3
+    control: heading
+  noSourceReachesThe:
+    xpath: //body/main/section[4]/div/div[3]/h3
+    control: heading
+  offlineIncidentKnowledgeIntelligence:
+    xpath: //body/main/section[4]/div/div[5]/div/h3
+    control: heading
+  discussYourRagProject:
+    role: link
+    name: Discuss your RAG project
+    exact: true
+    fallback:
+      - text: Discuss your RAG project
+        exact: true
+      - xpath: //body/main/section[4]/div/div[5]/a
+    control: link
+    href: /en/#contact
+  requestADemo:
+    role: link
+    name: Request a demo
+    exact: true
+    fallback:
+      - text: Request a demo
+        exact: true
+      - xpath: //body/main/section[5]/div/div[1]/a
+    control: link
+    href: /en/#contact
+  theInspectZEcosystem:
+    role: heading
+    name: The InspectZ ecosystem
+    exact: true
+    fallback:
+      - text: The InspectZ ecosystem
+        exact: true
+      - xpath: //body/main/section[6]/div/div[1]/h2
+    control: heading
+  citizenApp:
+    role: tab
+    name: Citizen app
+    exact: true
+    fallback:
+      - xpath: //body/main/section[6]/div/div[2]/button[1]
+    control: tab
+  inspectorApp:
+    role: tab
+    name: Inspector app
+    exact: true
+    fallback:
+      - xpath: //body/main/section[6]/div/div[2]/button[2]
+    control: tab
+  webAdmin:
+    role: tab
+    name: Web admin
+    exact: true
+    fallback:
+      - xpath: //body/main/section[6]/div/div[2]/button[3]
+    control: tab
+  facilityOwnerPortal:
+    role: tab
+    name: Facility owner portal
+    exact: true
+    fallback:
+      - xpath: //body/main/section[6]/div/div[2]/button[4]
+    control: tab
+  citizenReportingApp:
+    role: heading
+    name: Citizen reporting app
+    exact: true
+    fallback:
+      - text: Citizen reporting app
+        exact: true
+      - xpath: //body/main/section[6]/div/div[3]/div[1]/div/h3
+    control: heading
+  fromIdeaToAlways:
+    role: heading
+    name: From idea to always-on
+    exact: true
+    fallback:
+      - text: From idea to always-on
+        exact: true
+      - xpath: //body/main/section[7]/div/div[1]/h2
+    control: heading
+  whoWeServe:
+    role: heading
+    name: Who we serve
+    exact: true
+    fallback:
+      - text: Who we serve
+        exact: true
+      - xpath: //body/main/section[8]/div/div[1]/div[1]/h3
+    control: heading
+  whyIltizamTech:
+    role: heading
+    name: Why IltizamTech
+    exact: true
+    fallback:
+      - text: Why IltizamTech
+        exact: true
+      - xpath: //body/main/section[8]/div/div[1]/div[2]/h3
+    control: heading
+  questionsWeAreOften:
+    role: heading
+    name: Questions we are often asked
+    exact: true
+    fallback:
+      - text: Questions we are often asked
+        exact: true
+      - xpath: //body/main/section[9]/div/div[1]/h2
+    control: heading
+  haveASystemThat:
+    role: heading
+    name: Have a system that has to work, every time?
+    exact: true
+    fallback:
+      - text: Have a system that has to work, every time?
+        exact: true
+      - xpath: //body/main/section[10]/div/div[1]/h2
+    control: heading
+  infoIltizamtechCom:
+    role: link
+    name: info@iltizamtech.com
+    exact: true
+    fallback:
+      - text: info@iltizamtech.com
+        exact: true
+      - xpath: //body/main/section[10]/div/div[1]/div/a[1]
+    control: link
+    href: mailto:info@iltizamtech.com?subject=Project%20inquiry
+  seeInspectZ:
+    role: link
+    name: See InspectZ
+    exact: true
+    fallback:
+      - text: See InspectZ
+        exact: true
+      - xpath: //body/main/section[10]/div/div[1]/div/a[2]
+    control: link
+    href: /en/#product
+  services2:
+    xpath: //body/footer/div/nav/a[1]
+    control: link
+    href: /en/#services
+  products2:
+    xpath: //body/footer/div/nav/a[2]
+    control: link
+    href: /en/#products
+  rag:
+    role: link
+    name: RAG
+    exact: true
+    fallback:
+      - text: RAG
+        exact: true
+      - xpath: //body/footer/div/nav/a[3]
+    control: link
+    href: /en/#rag
+  frequentlyAskedQuestions:
+    role: link
+    name: Frequently asked questions
+    exact: true
+    fallback:
+      - xpath: //body/footer/div/nav/a[4]
+    control: link
+    href: /en/#faq
+  contact2:
+    xpath: //body/footer/div/nav/a[5]
+    control: link
+    href: /en/#contact

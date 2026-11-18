@@ -1,0 +1,11 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Happy path journey
+module: Cart
+tags:
+  - "@e2e"
+  - "@generated"
+steps:
+  - case: login-valid-user
+  - case: inventory-to-cart
+  - case: cart-to-checkout
+  - case: checkout-valid-data-is-accepted

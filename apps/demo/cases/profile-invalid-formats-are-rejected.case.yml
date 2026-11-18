@@ -1,0 +1,97 @@
+# Edited in the Control Panel Case Builder
+case: Profile — invalid formats are rejected
+type: negative
+module: Profile
+page: profile
+tags:
+  - "@regression"
+  - "@negative"
+  - "@generated"
+steps:
+  - fill:
+      element: profile.fullName
+      value: "{{data.fullName}}"
+  - fill:
+      element: profile.email
+      value: "{{data.email}}"
+  - fill:
+      element: profile.phone
+      value: "{{data.phone}}"
+  - fill:
+      element: profile.age
+      value: "{{data.age}}"
+  - choose:
+      element: profile.gender
+      value: "{{data.gender}}"
+  - select:
+      element: profile.country
+      value: "{{data.country}}"
+  - check:
+      element: profile.interests
+      value: Music
+  - check: profile.newsletter
+  - fill:
+      element: profile.bio
+      value: "{{data.bio}}"
+  - fill:
+      element: profile.visitDate
+      value: "{{data.visitDate}}"
+  - fill:
+      element: profile.endDate
+      value: "{{data.endDate}}"
+  - fill:
+      element: profile.startDate
+      value: "{{data.startDate}}"
+  - click: profile.saveProfile
+outcomes:
+  error:
+    - visible: profile.profileError
+data:
+  - id: TC-FMT-001
+    title: email without @
+    fullName: "{{faker.person.fullName}}"
+    email: not-an-email
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-FMT-002
+    title: email without domain suffix
+    fullName: "{{faker.person.fullName}}"
+    email: user@domain
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-FMT-003
+    title: letters in mobile number
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: abc12345
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-FMT-004
+    title: mobile number too short
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: "12"
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"

@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../src/core/app.schema.json
+# Created by the Setup Wizard on 2026-11-11
+name: Test101
+testIdAttribute: data-testid
+languages:
+  - en
+environments:
+  uat:
+    baseURL: https://www.ey.com/en_us

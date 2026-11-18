@@ -1,0 +1,35 @@
+# Edited in the Control Panel Case Builder
+case: Login — rejected
+type: negative
+module: Login
+page: login
+tags:
+  - "@generated"
+steps:
+  - fill:
+      element: login.username
+      value: "{{data.username}}"
+  - fill:
+      element: login.password
+      value: "{{data.password}}"
+  - click: login.submit
+outcomes:
+  error:
+    - visible: login.errorMessage
+data:
+  - id: TC-NEG-001
+    title: wrong password
+    username: "{{user.standard.username}}"
+    password: "{{faker.internet.password}}"
+  - id: TC-NEG-002
+    title: unknown user
+    username: "{{faker.internet.username}}"
+    password: "{{faker.internet.password}}"
+  - id: TC-NEG-003
+    title: empty username
+    username: ""
+    password: "{{user.standard.password}}"
+  - id: TC-NEG-004
+    title: empty password
+    username: "{{user.standard.username}}"
+    password: ""

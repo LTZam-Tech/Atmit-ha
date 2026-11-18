@@ -1,0 +1,24 @@
+# Edited in the Control Panel Case Builder
+case: Login — valid user
+type: positive
+module: Login
+page: login
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - fill:
+      element: login.username
+      value: "{{data.username}}"
+  - fill:
+      element: login.password
+      value: "{{data.password}}"
+  - click: login.submit
+outcomes:
+  success:
+    - visible: inventory.title
+data:
+  - id: TC-001
+    title: valid user logs in
+    username: "{{user.standard.username}}"
+    password: "{{user.standard.password}}"

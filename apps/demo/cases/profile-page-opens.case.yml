@@ -1,0 +1,14 @@
+# Edited in the Control Panel Case Builder
+case: Profile page opens
+type: positive
+module: Profile
+page: profile
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: profile.profileTitle
+  - visible: profile.fullName
+  - visible: profile.email
+  - visible: profile.phone
+  - visible: profile.saveProfile

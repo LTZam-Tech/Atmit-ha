@@ -1,0 +1,13 @@
+# Edited in the Control Panel Case Builder
+case: Cart to checkout
+type: positive
+module: Cart
+page: cart
+tags:
+  - "@navigation"
+  - "@generated"
+steps:
+  - click: cart.checkout
+  - visible: checkout.checkoutTitle
+  - url:
+      contains: /checkout.html

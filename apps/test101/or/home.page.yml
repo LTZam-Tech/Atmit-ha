@@ -1,0 +1,449 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: home
+url: /en_us
+description: Home page (Setup Wizard)
+readyWhen: ourCommitmentToAuditTitle
+auth: none
+tags:
+  - "@home"
+settings:
+  timeout: 10000
+elements:
+  skipToContent:
+    role: link
+    name: Skip to content
+    exact: true
+    fallback:
+      - text: Skip to content
+        exact: true
+      - css: a.skipToContent-button
+    control: link
+  eyHomepage:
+    role: link
+    name: EY Homepage
+    exact: true
+    fallback:
+      - text: EY Homepage
+        exact: true
+      - css: a.cmp-logo__link
+    control: link
+    href: /en_us
+  services:
+    role: button
+    name: Services
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[1]/nav/ul/li[1]/a
+    control: button
+    href: /en_us/services
+  industries:
+    role: button
+    name: Industries
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[1]/nav/ul/li[2]/a
+    control: button
+    href: /en_us/industries
+  insights:
+    role: button
+    name: Insights
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[1]/nav/ul/li[3]/a
+    control: button
+    href: /en_us/insights
+  aboutUs:
+    role: button
+    name: About us
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[1]/nav/ul/li[4]/a
+    control: button
+    href: /en_us/about-us
+  careers:
+    role: button
+    name: Careers
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[1]/nav/ul/li[5]/a
+    control: button
+    href: /en_us/careers
+  openSearch:
+    role: button
+    name: Open Search
+    exact: true
+    fallback:
+      - text: Search
+        exact: true
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[7]/div/div[1]/div[1]/a
+    control: button
+  myEy:
+    css: a.myey-login-url
+    fallback:
+      - xpath: //body/div[1]/div/div/header/div/div/div/div/div[4]/div/div[7]/div/div[2]/div/a[2]
+    control: link
+    href: https://login.ey.com/myey/login
+  openCountryLanguageSwitcher:
+    role: button
+    name: Open country language switcher
+    exact: true
+    fallback:
+      - label: Open country language switcher
+      - text: United States English
+        exact: true
+    control: button
+  ourCommitmentToAudit:
+    role: link
+    name: Our commitment to audit quality
+    exact: true
+    fallback:
+      - text: Our commitment to audit quality
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[1]/div[1]/div[2]/div/a
+    control: link
+    href: /en_us/assurance/audit-quality-report
+  ourCommitmentToAuditTitle:
+    role: heading
+    name: Our commitment to audit quality
+    exact: true
+    fallback:
+      - text: Our commitment to audit quality
+        exact: true
+      - css: h1.up-hero-carousel__title
+    control: heading
+  howCanCeosTurn:
+    text: How can CEOs turn AI productivity gains into lasting value?
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[1]/div[2]/div[2]/div/a
+    control: link
+    href: /en_us/ceo/ceo-outlook-global-report
+  fromArtificialIntelligenceTo:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[1]/div[3]/div[2]/div/a
+    control: link
+    href: /en_us/insights/ai/governing-superintelligence
+  auditQuality:
+    role: link
+    name: Audit quality
+    exact: true
+    fallback:
+      - text: Audit quality
+        exact: true
+      - css: a.up-hero-carousel__page-title.swiper-slide-active
+    control: link
+    href: /en_us/assurance/audit-quality-report
+  ceoImperative:
+    role: link
+    name: CEO Imperative
+    exact: true
+    fallback:
+      - text: CEO Imperative
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[2]/div[1]/a[2]
+    control: link
+    href: /en_us/ceo/ceo-outlook-global-report
+  artificialIntelligence:
+    role: link
+    name: Artificial Intelligence
+    exact: true
+    fallback:
+      - text: Artificial Intelligence
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[2]/div[1]/a[3]
+    control: link
+    href: /en_us/insights/ai/governing-superintelligence
+  previous:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[2]/div[2]/button[1]
+    control: button
+  next:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[2]/div[2]/button[2]
+    control: button
+  pause:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[2]/div/div/div/div/div/div[2]/div[2]/button[3]
+    control: button
+  eyPulseOfThe:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[4]/div/div/div/div[2]/a[1]
+    control: link
+    href: /en_us/life-sciences/pulse-of-medtech-industry-outlook
+  accelerateGrowthThroughModernized:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[4]/div/div/div/div[2]/a[2]
+    control: link
+    href: /en_us/accelerate-growth-through-modernized-financial-services-operations
+  howLionReimaginesEmployee:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[4]/div/div/div/div[2]/a[3]
+    control: link
+    href: /en_us/alliances/lion-shapes-employee-journeys-for-ai-future
+  a:
+    css: a.cmp-image__link
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[5]/div/div/div/div/div/div[1]/div/div/div[2]/div/div/div/a
+    control: link
+    href: /en_us/services/strategy/parthenon
+  button6029a8345ff0:
+    role: link
+    name: Learn more
+    exact: true
+    fallback:
+      - text: Learn more
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[5]/div/div/div/div/div/div[1]/div/div/div[4]/a
+    control: link
+    href: /en_us/services/strategy/parthenon
+  featuredCaseStudies:
+    role: heading
+    name: Featured case studies
+    exact: true
+    fallback:
+      - text: Featured case studies
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[7]/div/div/div[1]/div/div/div/h3
+    control: heading
+  seeMoreCaseStudies:
+    role: link
+    name: See more case studies >
+    exact: true
+    fallback:
+      - text: See more case studies >
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[7]/div/div/div[2]/div/div/div/p/a
+    control: link
+    href: /en_us/case-studies
+  readMoreHowMicrosoft:
+    label: Read more - How Microsoft 365 innovates under evolving regulations
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[1]/div/div/div/div/div[2]/a
+    control: link
+    href: /en_us/insights/ai/how-microsoft-365-enables-innovation-with-compliance-governance
+  readMoreHowMedtronic:
+    label: Read more - How Medtronic’s optimized supply chain gets products to patients in need
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[2]/div/div/div[2]/a
+    control: link
+    href: /en_us/insights/consulting/how-medtronic-optimized-supply-chain-gets-products-to-patients-in-need
+  readMoreHowEy:
+    label: Read more - How EY built an enterprise-scale agentic AI operating system
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[3]/div/div/div[2]/a
+    control: link
+    href: /en_us/insights/ai/building-an-enterprise-scale-agentic-ai-operating-system
+  readMoreHowTrust:
+    role: link
+    name: Read more - How trust sparked tax transformation at CenterPoint Energy
+    exact: true
+    fallback:
+      - label: Read more - How trust sparked tax transformation at CenterPoint Energy
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[4]/div/div/div[2]/a
+    control: link
+    href: /en_us/insights/tax/case-study-managed-services-centerpoint-energy-trust-tax-transformation
+  readMoreHowThe:
+    label: Read more - How the City of Antwerp is transforming its financial systems
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[5]/div/div/div[2]/a
+    control: link
+    href: /en_us/alliances/how-the-city-of-antwerp-is-transforming-its-financial-systems
+  readMoreHowDynasty:
+    label: Read more - How dynasty trusts are setting a family enterprise up for long-term success
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/div[1]/div[6]/div/div/div[2]/a
+    control: link
+    href: /en_us/insights/family-enterprise/how-dynasty-trusts-are-setting-a-family-enterprise-up-for-long-term-success
+  previous2:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/button[1]
+    control: button
+  goToSlide1:
+    role: button
+    name: Go to Slide 1
+    exact: true
+    fallback:
+      - label: Go to Slide 1
+      - css: li.swiper-pagination-bullet.swiper-pagination-bullet-active
+    control: button
+  goToSlide2:
+    role: button
+    name: Go to Slide 2
+    exact: true
+    fallback:
+      - label: Go to Slide 2
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[2]
+    control: button
+  goToSlide3:
+    role: button
+    name: Go to Slide 3
+    exact: true
+    fallback:
+      - label: Go to Slide 3
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[3]
+    control: button
+  goToSlide4:
+    role: button
+    name: Go to Slide 4
+    exact: true
+    fallback:
+      - label: Go to Slide 4
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[4]
+    control: button
+  goToSlide5:
+    role: button
+    name: Go to Slide 5
+    exact: true
+    fallback:
+      - label: Go to Slide 5
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[5]
+    control: button
+  goToSlide6:
+    role: button
+    name: Go to Slide 6
+    exact: true
+    fallback:
+      - label: Go to Slide 6
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[6]
+    control: button
+  goToSlide7:
+    role: button
+    name: Go to Slide 7
+    exact: true
+    fallback:
+      - label: Go to Slide 7
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/ul/li[7]
+    control: button
+  next2:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/button[2]
+    control: button
+  pause2:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[8]/div/div/button[3]
+    control: button
+  findOutHowWe:
+    role: link
+    name: Find out how we can help you shape what's next
+    exact: true
+    fallback:
+      - text: Find out how we can help you shape what's next
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[10]/div/div/div/div/div/div[1]/div/p[3]/a
+    control: link
+    href: /en_us/shape-the-future-with-confidence
+  readTheValueRealized:
+    role: link
+    name: Read the Value Realized report
+    exact: true
+    fallback:
+      - text: Read the Value Realized report
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[10]/div/div/div/div/div/div[1]/div/p[4]/a
+    control: link
+    href: /en_gl/value-realized-annual-report
+  button5a4b9debf027:
+    role: link
+    name: Subscribe
+    exact: true
+    fallback:
+      - label: Subscribe
+      - text: Subscribe
+        exact: true
+    control: link
+    href: /en_us/functional/forms/subscription/real-time-insight-form
+  button90c0f40fa2fa:
+    role: link
+    name: Read now
+    exact: true
+    fallback:
+      - text: Read now
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[14]/div/div[2]/div/div[1]/div[2]/div/div/a
+    control: link
+    href: /en_us/ceo/ceo-outlook-global-report
+  buttonAddec40d997f:
+    role: link
+    name: Explore our achievements
+    exact: true
+    fallback:
+      - text: Explore our achievements
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[18]/div/div/div/div[1]/div[2]/div/div/a
+    control: link
+    href: /en_us/services/technology/awards-recognition
+  button908ba120f7c0:
+    role: link
+    name: Start here
+    exact: true
+    fallback:
+      - text: Start here
+        exact: true
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[4]/div/div/div/div[1]/div[2]/div/div/a
+    control: link
+    href: /en_us/transformation
+  pauseCarousel:
+    role: button
+    name: Pause Carousel
+    exact: true
+    fallback:
+      - label: Pause Carousel
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/div[1]/div/button[1]
+    control: button
+  skipOnTheAgenda:
+    role: link
+    name: Skip On the agenda
+    exact: true
+    fallback:
+      - label: Skip On the agenda
+      - text: Skip
+        exact: true
+    control: link
+  navigateLeft:
+    role: button
+    name: Navigate Left
+    exact: true
+    fallback:
+      - label: Navigate Left
+      - text: west
+        exact: true
+    control: button
+  aiInsightsAiInsights:
+    text: AI Insights AI Insights Discover east
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/div[4]/a[1]
+    control: link
+    href: /en_us/services/ai
+  managedServicesManagedServices:
+    text: Managed Services Managed Services Discover east
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/div[4]/a[2]
+    control: link
+    href: /en_us/services/managed-services
+  assuranceServicesAssuranceServices:
+    text: Assurance Services Assurance Services Discover east
+    exact: true
+    fallback:
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/div[4]/a[3]
+    control: link
+    href: /en_us/services/assurance
+  technologyFeaturedHowCan:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/div[4]/a[4]
+    control: link
+    href: /en_us/services/technology
+  navigateRight:
+    role: button
+    name: Navigate Right
+    exact: true
+    fallback:
+      - label: Navigate Right
+      - xpath: //body/div[1]/div/div/div[3]/div/div/div[19]/div/div/div[8]/div/div[1]/span[2]
+    control: button
+  featuredPressReleases:
+    role: heading
+    name: Featured press releases
+    exact: true
+    fallback:
+      - text: Featured press releases
+        exact: true
+      - css: h2.cmp-contentGrid__title
+    control: heading
+  a2:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[24]/div/div/div[1]/div/div/div/div[1]/div/div[1]/a
+    control: link
+    href: /en_us/newsroom/2026/10/ey-parthenon-consumer-sentiment-survey-finds-that-holiday-spending-remains-resilient-despite-affordability-pressures
+  eyParthenonConsumerSentiment:
+    xpath: //body/div[1]/div/div/div[3]/div/div/div[24]/div/div/div[1]/div/div/div/div[1]/div/div[2]/h3
+    control: heading

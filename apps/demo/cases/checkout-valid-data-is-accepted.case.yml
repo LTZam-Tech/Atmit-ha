@@ -1,0 +1,43 @@
+# Edited in the Control Panel Case Builder
+case: Checkout — valid data is accepted
+type: positive
+module: Checkout
+page: checkout
+tags:
+  - "@regression"
+  - "@generated"
+steps:
+  - fill:
+      element: checkout.shipName
+      value: "{{data.shipName}}"
+  - fill:
+      element: checkout.shipCity
+      value: "{{data.shipCity}}"
+  - select:
+      element: checkout.payment
+      value: "{{data.payment}}"
+  - click: checkout.placeOrder
+outcomes:
+  success:
+    - visible: checkout.orderPlaced
+data:
+  - id: TC-001
+    title: valid data
+    shipName: "{{faker.lorem.words(2)}}"
+    shipCity: "{{faker.location.city}}"
+    payment: Card
+  - id: TC-POS-002
+    title: shipName at the maximum length (40)
+    shipName: "{{negative.longText(40)}}"
+    shipCity: "{{faker.location.city}}"
+    payment: Card
+  - id: TC-POS-003
+    title: shipName typed one character over the maximum (41) — the field keeps only 40
+    shipName: "{{negative.longText(41)}}"
+    shipCity: "{{faker.location.city}}"
+    payment: Card
+  - id: TC-POS-004
+    title: payment = Cash on delivery (each option)
+    shipName: "{{faker.lorem.words(2)}}"
+    shipCity: "{{faker.location.city}}"
+    payment: Cash on delivery

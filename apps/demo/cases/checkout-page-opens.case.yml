@@ -1,0 +1,14 @@
+# Edited in the Control Panel Case Builder
+case: Checkout page opens
+type: positive
+module: Checkout
+page: checkout
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: checkout.checkoutTitle
+  - visible: checkout.shipName
+  - visible: checkout.shipCity
+  - visible: checkout.payment
+  - visible: checkout.placeOrder

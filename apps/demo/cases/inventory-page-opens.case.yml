@@ -1,0 +1,10 @@
+# Edited in the Control Panel Case Builder
+case: Inventory page opens
+type: positive
+module: Inventory
+page: inventory
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: inventory.title

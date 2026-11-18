@@ -1,0 +1,192 @@
+# Edited in the Control Panel Case Builder
+case: Profile — valid data is accepted
+type: positive
+module: Profile
+page: profile
+tags:
+  - "@regression"
+  - "@generated"
+steps:
+  - fill:
+      element: profile.fullName
+      value: "{{data.fullName}}"
+  - fill:
+      element: profile.email
+      value: "{{data.email}}"
+  - fill:
+      element: profile.phone
+      value: "{{data.phone}}"
+  - fill:
+      element: profile.age
+      value: "{{data.age}}"
+  - choose:
+      element: profile.gender
+      value: "{{data.gender}}"
+  - select:
+      element: profile.country
+      value: "{{data.country}}"
+  - check:
+      element: profile.interests
+      value: Music
+  - check: profile.newsletter
+  - fill:
+      element: profile.bio
+      value: "{{data.bio}}"
+  - fill:
+      element: profile.visitDate
+      value: "{{data.visitDate}}"
+  - fill:
+      element: profile.endDate
+      value: "{{data.endDate}}"
+  - fill:
+      element: profile.startDate
+      value: "{{data.startDate}}"
+  - click: profile.saveProfile
+outcomes:
+  success:
+    - visible: profile.profileSaved
+data:
+  - id: TC-001
+    title: valid data
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-002
+    title: fullName at the maximum length (40)
+    fullName: "{{negative.longText(40)}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-003
+    title: fullName typed one character over the maximum (41) — the field keeps only 40
+    fullName: "{{negative.longText(41)}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-004
+    title: email at the maximum length (60)
+    fullName: "{{faker.person.fullName}}"
+    email: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-005
+    title: email typed one character over the maximum (61) — the field keeps only 60
+    fullName: "{{faker.person.fullName}}"
+    email: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-006
+    title: age at the minimum (18)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "18"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-007
+    title: age at the maximum (99)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "99"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-008
+    title: gender = Female (each option)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Female
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-009
+    title: country = Saudi Arabia (each option)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Saudi Arabia
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-010
+    title: country = United Arab Emirates (each option)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: United Arab Emirates
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-011
+    title: bio at the maximum length (200)
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{negative.longText(200)}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-POS-012
+    title: bio typed one character over the maximum (201) — the field keeps only 200
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{negative.longText(201)}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"

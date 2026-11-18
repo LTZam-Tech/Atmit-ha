@@ -1,0 +1,13 @@
+# Edited in the Control Panel Case Builder
+case: Cart to inventory
+type: positive
+module: Cart
+page: cart
+tags:
+  - "@navigation"
+  - "@generated"
+steps:
+  - click: cart.continueShopping
+  - visible: inventory.title
+  - url:
+      contains: /inventory.html

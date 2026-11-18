@@ -1,0 +1,11 @@
+# Edited in the Control Panel Case Builder
+case: Cart page opens
+type: positive
+module: Cart
+page: cart
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: cart.title
+  - visible: cart.notes

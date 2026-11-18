@@ -1,0 +1,34 @@
+# Edited in the Control Panel Case Builder
+case: Checkout — required fields are rejected when empty
+type: negative
+module: Checkout
+page: checkout
+tags:
+  - "@regression"
+  - "@negative"
+  - "@generated"
+steps:
+  - fill:
+      element: checkout.shipName
+      value: "{{data.shipName}}"
+  - fill:
+      element: checkout.shipCity
+      value: "{{data.shipCity}}"
+  - select:
+      element: checkout.payment
+      value: "{{data.payment}}"
+  - click: checkout.placeOrder
+outcomes:
+  error:
+    - hidden: checkout.orderPlaced
+data:
+  - id: TC-REQ-001
+    title: shipName left empty
+    shipName: ""
+    shipCity: "{{faker.location.city}}"
+    payment: Card
+  - id: TC-REQ-002
+    title: shipCity left empty
+    shipName: "{{faker.lorem.words(2)}}"
+    shipCity: ""
+    payment: Card

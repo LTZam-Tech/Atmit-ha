@@ -1,0 +1,10 @@
+# Edited in the Control Panel Case Builder
+case: Login page opens
+type: positive
+module: Login
+page: login
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: login.submit

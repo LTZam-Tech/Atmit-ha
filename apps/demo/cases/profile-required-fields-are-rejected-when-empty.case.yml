@@ -1,0 +1,73 @@
+# Edited in the Control Panel Case Builder
+case: Profile — required fields are rejected when empty
+type: negative
+module: Profile
+page: profile
+tags:
+  - "@regression"
+  - "@negative"
+  - "@generated"
+steps:
+  - fill:
+      element: profile.fullName
+      value: "{{data.fullName}}"
+  - fill:
+      element: profile.email
+      value: "{{data.email}}"
+  - fill:
+      element: profile.phone
+      value: "{{data.phone}}"
+  - fill:
+      element: profile.age
+      value: "{{data.age}}"
+  - choose:
+      element: profile.gender
+      value: "{{data.gender}}"
+  - select:
+      element: profile.country
+      value: "{{data.country}}"
+  - check:
+      element: profile.interests
+      value: Music
+  - check: profile.newsletter
+  - fill:
+      element: profile.bio
+      value: "{{data.bio}}"
+  - fill:
+      element: profile.visitDate
+      value: "{{data.visitDate}}"
+  - fill:
+      element: profile.endDate
+      value: "{{data.endDate}}"
+  - fill:
+      element: profile.startDate
+      value: "{{data.startDate}}"
+  - click: profile.saveProfile
+outcomes:
+  error:
+    - visible: profile.profileError
+data:
+  - id: TC-REQ-001
+    title: fullName left empty
+    fullName: ""
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"
+  - id: TC-REQ-002
+    title: email left empty
+    fullName: "{{faker.person.fullName}}"
+    email: ""
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+    visitDate: "{{date.today(MM/dd/yyyy)}}"
+    endDate: "{{date.today(yyyy-MM-dd)}}"
+    startDate: "{{date.today(dd/MM/yyyy)}}"

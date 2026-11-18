@@ -1,0 +1,19 @@
+# Edited in the Control Panel Case Builder
+case: Login to inventory
+type: positive
+module: Login
+page: login
+tags:
+  - "@navigation"
+  - "@generated"
+steps:
+  - fill:
+      element: login.username
+      value: "{{user.standard.username}}"
+  - fill:
+      element: login.password
+      value: "{{user.standard.password}}"
+  - click: login.submit
+  - visible: inventory.title
+  - url:
+      contains: /inventory.html
