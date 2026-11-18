@@ -31,6 +31,7 @@ import { execFileSync } from 'node:child_process';
 import AdmZip from 'adm-zip';
 import { generateProject } from '../src/core/export/codegen';
 import { checkPages } from '../src/core/page-check';
+import { checkRequest, SECURITY_HEADERS } from './security';
 
 const PORT = Number(process.env.PANEL_PORT ?? 4400);
 const PW_CLI = path.join(ROOT, 'node_modules/@playwright/test/cli.js');
@@ -641,6 +642,16 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   const q = (k: string) => url.searchParams.get(k) ?? undefined;
   let m: RegExpMatchArray | null;
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+  const header = (k: string) => { const v = req.headers[k]; return Array.isArray(v) ? v[0] : v; };
+  const rejected = checkRequest({
+    method: req.method ?? 'GET', path: p, port: PORT,
+    host: header('host'), origin: header('origin'), secFetchSite: header('sec-fetch-site'), secFetchMode: header('sec-fetch-mode'), contentType: header('content-type'),
+  });
+  if (rejected) {
+    console.warn(`[panel] blocked ${req.method} ${p}: ${rejected.error}`);
+    return json(res, rejected.status, { error: rejected.error });
+  }
   try {
     if (req.method === 'GET' && p === '/') return serveStatic(res, path.join(ROOT, 'panel'), 'index.html');
     if (req.method === 'GET' && (p.startsWith('/app/') || p.startsWith('/vendor/'))) return serveStatic(res, path.join(ROOT, 'panel'), p.slice(1));

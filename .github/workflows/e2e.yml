@@ -23,6 +23,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run validate
         env: { APP: '${{ inputs.app || 'demo' }}' }
+      - run: npm run test:unit
       - run: npx playwright test --shard=${{ matrix.shard }} ${{ inputs.grep && format('--grep {0}', inputs.grep) || '' }}
         env:
           CI: 'true'

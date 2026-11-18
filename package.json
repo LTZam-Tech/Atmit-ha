@@ -25,6 +25,7 @@
     "report": "node -e \"import('node:child_process').then(c=>c.exec((process.platform==='win32'?'start ':'open ')+'reports/smart-report/index.html'))\"",
     "report:debug": "playwright show-report reports/playwright-html",
     "typecheck": "tsc --noEmit",
+    "test:unit": "node --import tsx --test \"tests/unit/**/*.test.ts\"",
     "validate": "tsx scripts/generate-or-types.ts --check",
     "test:ar": "cross-env LOCALE=ar playwright test"
   },
