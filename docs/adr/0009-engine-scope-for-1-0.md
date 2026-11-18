@@ -1,6 +1,6 @@
 # ADR-0009: Which test engines ship in 1.0
 
-- Status: **Proposed**, needs product owner decision
+- Status: **Accepted: option B, web + API in 1.0** (product owner decision, 2026-11-18)
 - Date: 2026-11-18
 
 ## Context

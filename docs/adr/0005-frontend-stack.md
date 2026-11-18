@@ -1,6 +1,6 @@
 # ADR-0005: Frontend stack for the platform UI
 
-- Status: **Proposed**, needs product owner and architect decision
+- Status: **Accepted: Angular** (product owner decision, 2026-11-18; see Outcome)
 - Date: 2026-11-18
 
 ## Context
@@ -21,6 +21,15 @@ accessibility and component tests. The no-build approach has no types, no compon
 
 **Option A.** Port screen logic and the `i18n-ar.js` dictionary from 0.1.0, screen by screen, behind the new shell. The
 effort estimate assumed a rebuild; option B saves about 10% of the frontend figure, option A lowers hiring risk.
+
+## Outcome
+
+The product owner chose **Angular** (option not listed above): the same framework as IltizamTech's other products
+(Inspection admin and facility-owner apps use Angular 19), so teams, components and reviews are shared across products.
+Angular + TypeScript + Angular CDK for accessible primitives; CSS design tokens for the IltizamTech design system;
+`@angular/localize` or a runtime dictionary for Arabic/English with RTL. Screen logic and `i18n-ar.js` strings are ported
+from 0.1.0 screen by screen. Option A's other consequences (new `web/` package with its own build, component tests in CI)
+apply unchanged.
 
 ## Consequences if accepted
 

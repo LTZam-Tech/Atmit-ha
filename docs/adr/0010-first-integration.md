@@ -1,6 +1,6 @@
 # ADR-0010: First test-management / defect integration
 
-- Status: **Proposed**, needs product owner decision
+- Status: **Accepted: Jira first** unless the first pilot client uses another tool (recommendation adopted, 2026-11-18)
 - Date: 2026-11-18
 
 ## Context

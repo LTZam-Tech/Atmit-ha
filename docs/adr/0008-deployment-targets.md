@@ -1,6 +1,6 @@
 # ADR-0008: Deployment targets for release 1.0
 
-- Status: **Proposed**, needs product owner decision
+- Status: **Accepted: option A, Docker Compose + offline bundle** (recommendation adopted, 2026-11-18)
 - Date: 2026-11-18
 
 ## Context

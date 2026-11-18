@@ -1,6 +1,6 @@
 # ADR-0012: Database keys, tenant isolation and versioning
 
-- Status: **Proposed**, depends on ADR-0006 (backend stack); the schema itself is stack-agnostic
+- Status: **Accepted** (ADR-0006 decided: .NET; migrations run by the platform, ADR-0013)
 - Date: 2026-11-18
 
 ## Context

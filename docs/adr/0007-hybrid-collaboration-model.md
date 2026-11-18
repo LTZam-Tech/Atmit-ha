@@ -1,6 +1,6 @@
 # ADR-0007: Central and local collaboration model
 
-- Status: **Proposed**, needs product owner decision (largest single swing in the estimate)
+- Status: **Accepted: option B, central-first with offline drafts** (product owner decision, 2026-11-18)
 - Date: 2026-11-18
 
 ## Context

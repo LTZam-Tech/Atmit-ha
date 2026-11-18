@@ -1,6 +1,6 @@
 # ADR-0006: Backend stack and shape
 
-- Status: **Proposed**, needs architect decision
+- Status: **Accepted: option B, .NET** (product owner decision, 2026-11-18; see Outcome)
 - Date: 2026-11-18
 
 ## Context
@@ -22,6 +22,19 @@ agents, and says: no unnecessary microservices, a modular architecture with clea
 **Option A**: one backend process with modules per bounded context (identity and access, workspace and projects, test
 assets, execution, evidence and reports, integrations), PostgreSQL as the only transactional store, RabbitMQ for jobs,
 agents as a separate deployable. Module boundaries checked in CI (no imports across module internals).
+
+## Outcome
+
+The product owner chose **.NET** for the platform server, matching IltizamTech's other backends (net10.0). The split:
+
+- **Platform server (.NET 10, ASP.NET Core)**: one modular monolith — identity and access, workspaces and projects,
+  test assets, execution orchestration, evidence and reports, integrations. PostgreSQL, RabbitMQ. See ADR-0013.
+- **Test engine and execution agents (Node + TypeScript)**: `src/core` stays the engine; agents run it. The platform
+  and the agents talk only through the versioned job and result contract (ADR-0014), so the case model is not
+  duplicated in C#: the platform stores steps as JSON and validates them by calling the engine's validator on the agent
+  side, plus its own structural checks.
+
+The cost noted under option B (two languages) is accepted; the contract keeps it to one seam.
 
 ## Consequences if accepted
 
