@@ -268,6 +268,13 @@ Many sites change the address at once and swap the content a moment later (page 
 
 Each heal is noted in the report. **Runs → What the run found → Self-healing during the run** offers the matching fix in one click: **Use "…" as ready element**, or **Open it through navigation**.
 
+**Healing policy** (`app.yml` → `run: { healing: pass | flag | off }`, or `HEALING=flag npm test` for one run):
+- `pass` (default): heals let actions and navigation go on, but a **check** (visible, text, value…, or a saved value) that only passes because a backup locator found a substitute element **fails** — it could be hiding a real defect.
+- `flag`: the test still runs to the end, then fails if it needed any healing. Use it for release gates.
+- `off`: no healing; the original failure stops the test.
+
+Every heal keeps the **original failure** (for example "primary locator matched no element") in the report. Run summaries count `healed` tests separately from `flaky` ones (passed after a retry). See ADR-0011.
+
 **Pages → 🩺 Check pages** opens every page by its address, with the session it starts with, and reports what it finds:
 - *Ready.*
 - *Another element shows*, with a one-click **Use "…"** that sets a new "ready when" element.

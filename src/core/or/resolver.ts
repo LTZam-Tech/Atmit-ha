@@ -10,6 +10,7 @@
 import { test, type FrameLocator, type Locator, type Page } from '@playwright/test';
 import { environment, runConfig, type Locale } from '../../../config/environment';
 import { loadRepository } from './loader';
+import { recordHeal, type HealPurpose } from '../healing';
 import type { ElementDef, LocalizedText, NormalizedPageDef, StrategyDef } from './types';
 
 type Root = Page | Locator | FrameLocator;
@@ -43,11 +44,15 @@ export class SmartOR {
     return this.build(def, this.rootFor(def, params, (n, p) => this.locator(n, p)), params, def);
   }
 
-  /** Smart resolution with fallback + uniqueness check + healing report. */
-  async el(name: string, params: Params = {}, opts: { timeout?: number } = {}): Promise<Locator> {
+  /**
+   * Smart resolution with fallback + uniqueness check + healing report.
+   * `purpose: 'check'` marks a lookup made for an assertion: under every healing policy a check that only
+   * passes through a backup locator fails the test (src/core/healing.ts).
+   */
+  async el(name: string, params: Params = {}, opts: { timeout?: number; purpose?: HealPurpose } = {}): Promise<Locator> {
     const def = this.element(name);
     const timeout = opts.timeout ?? this.timeout;
-    const root = def.within ? await this.el(def.within, params, opts) : this.rootFor(def, params);
+    const root = def.within ? await this.el(def.within, params, { ...opts, purpose: opts.purpose === 'check' ? 'check' : 'action' }) : this.rootFor(def, params);
     const strategies: StrategyDef[] = [def, ...(this.fallbackEnabled ? def.fallback ?? [] : [])];
     const candidates = strategies.map((s) => this.build(s, root, params, def));
 
@@ -69,7 +74,17 @@ export class SmartOR {
 
     // groups (radio / checkbox sets) legitimately match several inputs
     if (def.control === 'radiogroup' || def.control === 'checkgroup') {
-      for (const c of candidates) if ((await c.count()) > 0) return c;
+      for (let i = 0; i < candidates.length; i++) {
+        if ((await candidates[i].count()) === 0) continue;
+        if (i > 0) {
+          recordHeal({
+            kind: 'fallback-locator', target: `${this.def.page}.${name}`, purpose: opts.purpose ?? 'action',
+            original: `primary locator [${describe(def)}] matched no element`,
+            healedBy: `fallback #${i} [${describe(strategies[i])}]`, fix: `Update or/${this.def.file}`,
+          });
+        }
+        return candidates[i];
+      }
     }
 
     // 3) first candidate that matches exactly ONE element wins
@@ -78,7 +93,14 @@ export class SmartOR {
       const n = await candidates[i].count();
       counts.push(n);
       if (n === 1) {
-        if (i > 0) this.annotate('or-healed', `${this.def.page}.${name}: primary [${describe(def)}] failed → used fallback #${i} [${describe(strategies[i])}]. Update or/${this.def.file}`);
+        if (i > 0) {
+          const legacy = `${this.def.page}.${name}: primary [${describe(def)}] failed → used fallback #${i} [${describe(strategies[i])}]. Update or/${this.def.file}`;
+          recordHeal({
+            kind: 'fallback-locator', target: `${this.def.page}.${name}`, purpose: opts.purpose ?? 'action',
+            original: `primary locator [${describe(def)}] matched ${counts[0] === 0 ? 'no element' : `${counts[0]} elements (ambiguous)`}`,
+            healedBy: `fallback #${i} [${describe(strategies[i])}]`, fix: `Update or/${this.def.file}`,
+          }, legacy);
+        }
         if ('xpath' in strategies[i]) this.annotate('or-xpath', `${this.def.page}.${name} resolved by XPath — fragile, prefer testid/role`);
         return candidates[i];
       }
@@ -96,8 +118,9 @@ export class SmartOR {
 
   // ---------------------------------------------------------------- internals
 
+  /** backup locators are tried unless the page turns them off or the run's healing policy is "off" */
   private get fallbackEnabled() {
-    return this.def.settings?.fallback !== false;
+    return this.def.settings?.fallback !== false && runConfig.healing !== 'off';
   }
 
   private element(name: string): ElementDef {

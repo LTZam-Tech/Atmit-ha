@@ -44,7 +44,8 @@ export interface AppConfig {
   users: Record<string, AppUser>;
   messages: Record<string, Record<string, string>>;
   /** parallel browsers, timeouts (seconds) and retries for runs */
-  run?: { workers?: number; retries?: number; testTimeout?: number; waitTimeout?: number };
+  /** healing: self-healing policy pass | flag | off (src/core/healing.ts) */
+  run?: { workers?: number; retries?: number; testTimeout?: number; waitTimeout?: number; healing?: 'pass' | 'flag' | 'off' };
 }
 
 const validate = new Ajv({ allErrors: true, allowUnionTypes: true }).compile<any>(

@@ -161,6 +161,14 @@
           "minimum": 1,
           "maximum": 120,
           "description": "Seconds to wait for an element / check (default 10)"
+        },
+        "healing": {
+          "enum": [
+            "pass",
+            "flag",
+            "off"
+          ],
+          "description": "Self-healing policy: pass (default; a check that passes only through healing fails), flag (any healing fails the test at the end), off (no healing)"
         }
       }
     }

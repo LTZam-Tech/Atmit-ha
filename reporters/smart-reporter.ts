@@ -12,6 +12,8 @@ import path from 'node:path';
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from '@playwright/test/reporter';
 import { currentApp, loadApp, ROOT } from '../src/core/app';
 import { profileFor } from '../src/core/branding';
+import { healsOf, type HealEvent } from '../src/core/healing';
+import { runConfig } from '../config/environment';
 
 const HISTORY_KEEP = Number(process.env.REPORT_HISTORY_KEEP ?? 50);
 
@@ -19,14 +21,14 @@ type OpenMode = 'always' | 'on-failure' | 'never';
 interface Options { outputFolder?: string; title?: string; open?: OpenMode; history?: boolean }
 
 type Kind = 'positive' | 'negative' | 'other';
-type Category = 'Application defect' | 'Locator / OR' | 'Environment' | 'Timeout' | 'Script error';
+type Category = 'Application defect' | 'Locator / OR' | 'Self-healing' | 'Environment' | 'Timeout' | 'Script error';
 
 interface StepRow { title: string; kind: string; duration: number; error?: string; depth: number }
 interface TestRow {
   id: string; title: string; tcId?: string; module: string; file: string; project: string;
   kind: Kind; tags: string[]; status: string; flaky: boolean; retries: number; duration: number;
   steps: StepRow[]; error?: string; category?: Category; seed?: string;
-  healed: string[]; xpath: string[]; vars: string[]; screenshots: { name: string; src: string }[];
+  healed: string[]; healing: HealEvent[]; xpath: string[]; vars: string[]; screenshots: { name: string; src: string }[];
   video?: string; trace?: string;
   lastPage?: { url: string; title: string; page: string | null }; caseFile?: string; detected?: string;
   discoveries?: { visits: unknown[]; messages: unknown[] }; user?: string;
@@ -77,7 +79,7 @@ export default class SmartReporter implements Reporter {
       flaky: result.status === 'passed' && result.retry > 0,
       steps: flattenSteps(result.steps, result.status !== 'passed' && result.status !== 'skipped'),
       error: errorText, category: errorText ? classify(errorText) : undefined,
-      seed: ann('data-seed')[0], healed: ann('or-healed'), xpath: ann('or-xpath'), vars: ann('runtime-value'),
+      seed: ann('data-seed')[0], healed: ann('or-healed'), healing: healsOf(test.annotations), xpath: ann('or-xpath'), vars: ann('runtime-value'),
       screenshots: [],
       lastPage: (() => { try { return JSON.parse(ann('last-page').at(-1) ?? ''); } catch { return undefined; } })(),
       caseFile: ann('case-file')[0]?.replace(/^cases\//, ''), detected: ann('detected')[0],
@@ -132,7 +134,12 @@ export default class SmartReporter implements Reporter {
 
 export interface RunSummary {
   id: string; app: string; appName: string; env: string; locale: string; target: string; started: string; duration: number; status: string;
-  counts: { total: number; passed: number; failed: number; flaky: number; skipped: number; positive: number; negative: number };
+  /**
+   * passed = passed on the first try (as in 0.1.0, so pass-rate trends stay comparable); flaky = passed after a retry;
+   * healed = passed tests (first try or retry) that needed self-healing; healingFailed = failed by the healing policy
+   */
+  counts: { total: number; passed: number; failed: number; flaky: number; skipped: number; positive: number; negative: number; healed: number; healingFailed: number };
+  healingPolicy?: string;
   tests: { title: string; module: string; kind: string; status: string; duration: number; tcId?: string; category?: string; lastPage?: TestRow['lastPage']; caseFile?: string }[];
 }
 
@@ -152,8 +159,11 @@ function saveHistory(out: string, start: Date, app: string, appName: string, met
       total: tests.length, passed: tests.filter((t) => t.status === 'passed' && !t.flaky).length, failed: tests.filter(failed).length,
       flaky: tests.filter((t) => t.flaky).length, skipped: tests.filter((t) => t.status === 'skipped').length,
       positive: tests.filter((t) => t.kind === 'positive').length, negative: tests.filter((t) => t.kind === 'negative').length,
+      healed: tests.filter((t) => t.status === 'passed' && t.healing.length).length,
+      healingFailed: tests.filter((t) => t.category === 'Self-healing').length,
     },
-    tests: tests.map((t) => ({ title: t.title, module: t.module, kind: t.kind, status: t.flaky ? 'flaky' : t.status, duration: t.duration, tcId: t.tcId, category: t.category, lastPage: t.lastPage, caseFile: t.caseFile, discoveries: t.discoveries, user: t.user, healed: t.healed.length ? t.healed : undefined })),
+    healingPolicy: runConfig.healing,
+    tests: tests.map((t) => ({ title: t.title, module: t.module, kind: t.kind, status: t.flaky ? 'flaky' : t.status, duration: t.duration, tcId: t.tcId, category: t.category, lastPage: t.lastPage, caseFile: t.caseFile, discoveries: t.discoveries, user: t.user, healed: t.healed.length ? t.healed : undefined, healing: t.healing.length ? t.healing : undefined })),
   };
   fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify(summary, null, 1));
   // retention
@@ -192,6 +202,7 @@ function flattenSteps(steps: TestStep[], showInternal: boolean, depth = 0, out: 
 }
 
 function classify(msg: string): Category {
+  if (msg.includes('[Healing]')) return 'Self-healing';
   if (msg.includes('[Smart OR]')) return 'Locator / OR';
   if (/net::ERR|ECONNREFUSED|ENOTFOUND|browserType\.connect|Target page, context or browser has been closed/i.test(msg)) return 'Environment';
   if (/Test timeout of|exceeded while/i.test(msg) && !/expect\(/.test(msg)) return 'Timeout';
@@ -365,7 +376,8 @@ function modules() {
 function orHealth() {
   const healed = [...new Set(T.flatMap(t => t.healed))], xp = [...new Set(T.flatMap(t => t.xpath))];
   if (!healed.length && !xp.length) return '<div class="card"><h2>Object Repository health</h2><p class="muted">All elements resolved by their primary locator.</p></div>';
-  return '<div class="card warnbox"><h2>⚠ Object Repository health</h2><p class="sec">Tests passed, but these elements were found by a fallback or by XPath. Update the OR before they break.</p><ul>' +
+  const nHealed = T.filter(t => t.status === 'passed' && t.healing && t.healing.length).length;
+  return '<div class="card warnbox"><h2>⚠ Object Repository health</h2><p class="sec">' + (nHealed ? nHealed + ' test(s) passed only with self-healing. ' : '') + 'These elements were found by a fallback or by XPath, or a page was reached another way. Update the OR before they break.</p><ul>' +
     healed.map(h => '<li>' + esc(h) + '</li>').join('') + xp.map(h => '<li>' + esc(h) + '</li>').join('') + '</ul></div>';
 }
 
@@ -380,7 +392,10 @@ function testCard(t) {
     '<span class="muted">' + (t.retries ? 'retry ' + t.retries + ' · ' : '') + ms(t.duration) + '</span><span class="muted">▾</span></summary>' +
     '<div class="body">' +
       (t.error ? '<div><div class="cat" style="color:var(--critical-ink);margin-bottom:6px">✖ ' + esc(t.category) + '</div><pre>' + esc(t.error) + '</pre></div>' : '') +
-      (t.healed.length ? '<div class="healed">⚠ ' + t.healed.map(esc).join('<br>⚠ ') + '</div>' : '') +
+      (t.healing && t.healing.length
+        ? '<div class="healed"><b>⚠ Self-healed</b>' + t.healing.map(h => '<div style="margin-top:4px"><b>' + esc(h.target) + '</b> · ' + esc(h.kind) + (h.purpose === 'check' ? ' · <b>during a check</b>' : '') +
+            '<br><span class="muted">Original failure:</span> ' + esc(h.original) + '<br><span class="muted">Healed by:</span> ' + esc(h.healedBy) + ' · ' + esc(h.fix) + '</div>').join('') + '</div>'
+        : t.healed.length ? '<div class="healed">⚠ ' + t.healed.map(esc).join('<br>⚠ ') + '</div>' : '') +
       (t.lastPage ? '<div class="muted" style="font-size:12px;margin:6px 0">Ended on ' + (t.lastPage.page ? '<b>' + esc(t.lastPage.page) + '</b> page' : '<b>a page not in the Object Repository yet</b> — use <i>Detect &amp; continue</i> in the Control Panel') + ' · ' + esc(t.lastPage.url) + '</div>' : '') +
       (t.detected ? '<div class="muted" style="font-size:12px">🔎 Detected: ' + esc(t.detected) + '</div>' : '') +
       (t.vars && t.vars.length ? '<div class="muted" style="font-size:12px">Runtime values: ' + t.vars.map(v => '<code>' + esc(v) + '</code>').join(' · ') + '</div>' : '') +
