@@ -7,3 +7,10 @@ apps/*/secrets.yml
 apps/*/or/drafts/
 apps/*/or/*.backup-*.yml
 apps/*/or/.visual/
+# platform (.NET)
+platform/**/bin/
+platform/**/obj/
+platform/**/TestResults/
+*.user
+# local secrets for the Compose stack
+deploy/compose/.env

@@ -1,0 +1,68 @@
+# Atimtha platform — LOCAL DEVELOPMENT stack (ADR-0008). From deploy/compose:
+#   cp .env.example .env      # then change the passwords
+#   docker compose up --build
+# API: http://localhost:8080/api/v1 · OpenAPI: http://localhost:8080/openapi/v1.json · RabbitMQ UI: http://localhost:15672
+# Development login is ON here (ASPNETCORE_ENVIRONMENT=Development). Client installations use the production package.
+name: atimtha-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: atimtha
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      ATIMTHA_OWNER_PASSWORD: ${ATIMTHA_OWNER_PASSWORD:?set ATIMTHA_OWNER_PASSWORD in .env}
+      ATIMTHA_APP_PASSWORD: ${ATIMTHA_APP_PASSWORD:?set ATIMTHA_APP_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    ports: ["127.0.0.1:5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d atimtha"]
+      interval: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: atimtha
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 20
+
+  migrate:
+    build: { context: ../.., dockerfile: platform/Dockerfile }
+    image: atimtha/platform:dev
+    command: ["migrate"]
+    environment:
+      ConnectionStrings__Migrations: Host=postgres;Database=atimtha;Username=atimtha_owner;Password=${ATIMTHA_OWNER_PASSWORD}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  seed:
+    image: postgres:16-alpine
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-h", "postgres", "-U", "atimtha_owner", "-d", "atimtha", "-f", "/seed.sql"]
+    environment:
+      PGPASSWORD: ${ATIMTHA_OWNER_PASSWORD}
+    volumes:
+      - ../dev/seed.sql:/seed.sql:ro
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  api:
+    image: atimtha/platform:dev
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Platform: Host=postgres;Database=atimtha;Username=atimtha_app;Password=${ATIMTHA_APP_PASSWORD}
+      Auth__Development__Enabled: "true"
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      rabbitmq: { condition: service_healthy }
+
+volumes:
+  pgdata:

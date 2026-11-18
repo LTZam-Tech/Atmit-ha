@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Atimtha.Api/Atimtha.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Atimtha.Api.Tests/Atimtha.Api.Tests.csproj" />
+  </Folder>
+</Solution>

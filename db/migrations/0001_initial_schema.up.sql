@@ -622,9 +622,10 @@ BEGIN
   ] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
+    -- NULLIF: an unset or empty setting means "no organisation" (no rows), never a cast error
     EXECUTE format(
-      'CREATE POLICY tenant_isolation ON %I USING (organization_id = current_setting(''app.organization_id'', true)::uuid) ' ||
-      'WITH CHECK (organization_id = current_setting(''app.organization_id'', true)::uuid)', t);
+      'CREATE POLICY tenant_isolation ON %I USING (organization_id = NULLIF(current_setting(''app.organization_id'', true), '''')::uuid) ' ||
+      'WITH CHECK (organization_id = NULLIF(current_setting(''app.organization_id'', true), '''')::uuid)', t);
   END LOOP;
 END $$;
 
