@@ -58,6 +58,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Platform: Host=postgres;Database=atimtha;Username=atimtha_app;Password=${ATIMTHA_APP_PASSWORD}
+      # requeues jobs of silent agents across organisations (owner role, BYPASSRLS)
+      ConnectionStrings__Maintenance: Host=postgres;Database=atimtha;Username=atimtha_owner;Password=${ATIMTHA_OWNER_PASSWORD}
       Auth__Development__Enabled: "true"
     ports: ["127.0.0.1:8080:8080"]
     depends_on:

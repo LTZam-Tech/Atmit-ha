@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atimtha.iltizamtech/contracts/project-snapshot/1",
+  "title": "Atimtha project snapshot v1 (ADR-0014)",
+  "description": "A whole 0.1.0 project as JSON. Each member holds a 0.1.0 YAML file parsed as JSON. No passwords.",
+  "type": "object",
+  "required": ["contract", "key", "app", "pages", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "contract": { "const": "atimtha.project/1" },
+    "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$" },
+    "app": { "type": "object", "description": "app.yml (src/core/app.schema.json), users and httpCredentials without password" },
+    "messages": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } },
+    "pages": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]{0,99}$" },
+      "additionalProperties": { "type": "object", "required": ["page", "elements"], "description": "or/<page>.page.yml (src/core/or/or.schema.json)" }
+    },
+    "cases": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,149}$" },
+      "additionalProperties": { "type": "object", "required": ["case"] }
+    },
+    "flows": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,149}$" },
+      "additionalProperties": { "type": "object", "required": ["flow", "steps"] }
+    },
+    "navigation": {
+      "type": "object",
+      "properties": { "edges": { "type": "array", "items": { "type": "object", "required": ["from", "to"] } } }
+    },
+    "suites": { "type": "object" }
+  }
+}

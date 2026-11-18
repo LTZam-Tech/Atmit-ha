@@ -1,8 +1,10 @@
 // Atimtha platform API — .NET modular monolith (ADR-0006, ADR-0013).
 //   dotnet Atimtha.Api.dll            → serves /api/v1, /health/*, /openapi/v1.json
 //   dotnet Atimtha.Api.dll migrate    → applies db/migrations/*.up.sql with the owner connection, then exits
+using Atimtha.Api.Execution;
 using Atimtha.Api.Identity;
 using Atimtha.Api.Infrastructure;
+using Atimtha.Api.TestAssets;
 using Atimtha.Api.Workspaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,18 +42,31 @@ var platformCs = builder.Configuration.GetConnectionString("Platform")
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<TenantConnectionInterceptor>();
 builder.Services.AddDbContext<AtimthaDbContext>((sp, o) => o
-    .UseNpgsql(platformCs, n => n.MapEnum<HealingPolicy>("healing_policy", AtimthaDbContext.Schema))
+    .UseNpgsql(platformCs, AtimthaDbContext.MapEnums)
     .AddInterceptors(sp.GetRequiredService<TenantConnectionInterceptor>()));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuditWriter>();
 builder.Services.AddScoped<AccessService>();
+builder.Services.AddScoped<IJobQueue, PostgresJobQueue>();
+builder.Services.AddHostedService<MaintenanceService>();
 
 // ---------------------------------------------------------------- authentication: OIDC/JWT; development login only in Development
 var devLogin = builder.Configuration.GetValue<bool>("Auth:Development:Enabled");
 if (devLogin && !builder.Environment.IsDevelopment())
     throw new InvalidOperationException("Auth:Development:Enabled is only allowed when ASPNETCORE_ENVIRONMENT is Development.");
 
-var authentication = builder.Services.AddAuthentication(devLogin ? DevelopmentAuthenticationHandler.Scheme : JwtBearerDefaults.AuthenticationScheme);
+// one selector scheme: agent token → AtimthaAgent; X-Dev-User (development only) → Development; otherwise OIDC bearer
+const string selectorScheme = "Atimtha";
+var authentication = builder.Services.AddAuthentication(selectorScheme);
+authentication.AddPolicyScheme(selectorScheme, "Atimtha", o => o.ForwardDefaultSelector = ctx =>
+{
+    if (ctx.Request.Headers.Authorization.ToString().StartsWith(AgentAuthenticationHandler.Scheme + " ", StringComparison.Ordinal))
+        return AgentAuthenticationHandler.Scheme;
+    if (devLogin && ctx.Request.Headers.ContainsKey(DevelopmentAuthenticationHandler.Header))
+        return DevelopmentAuthenticationHandler.Scheme;
+    return JwtBearerDefaults.AuthenticationScheme;
+});
+authentication.AddScheme<AuthenticationSchemeOptions, AgentAuthenticationHandler>(AgentAuthenticationHandler.Scheme, null);
 authentication.AddJwtBearer(o =>
 {
     o.Authority = builder.Configuration["Auth:Authority"];
@@ -101,6 +116,9 @@ api.MapMe();
 api.MapWorkspaces();
 api.MapProjects();
 api.MapEnvironments();
+api.MapTestAssets();
+api.MapExecutions();
+app.MapAgents(api);
 
 app.Run();
 

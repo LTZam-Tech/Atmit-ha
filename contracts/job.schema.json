@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atimtha.iltizamtech/contracts/job/1",
+  "title": "Atimtha job v1 (ADR-0014): what an agent receives when it claims work",
+  "description": "Data only: there is no field naming a program or a command. Secrets travel as references.",
+  "type": "object",
+  "required": ["contract", "jobId", "executionId", "organizationId", "engine", "project", "environment", "selection", "settings", "expiresAt"],
+  "additionalProperties": false,
+  "properties": {
+    "contract": { "const": "atimtha.job/1" },
+    "jobId": { "type": "string", "format": "uuid" },
+    "executionId": { "type": "string", "format": "uuid" },
+    "organizationId": { "type": "string", "format": "uuid" },
+    "engine": { "enum": ["web", "api"] },
+    "project": { "$ref": "https://atimtha.iltizamtech/contracts/project-snapshot/1" },
+    "environment": {
+      "type": "object",
+      "required": ["key", "baseURL"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "baseURL": { "type": "string", "format": "uri" },
+        "secretRefs": {
+          "type": "object",
+          "description": "secret path (users.<key>.password, environments.<key>.httpCredentials.password) → secrets-manager reference",
+          "additionalProperties": { "type": "string", "pattern": "^vault:" }
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cases": { "type": "array", "items": { "type": "string" } },
+        "rows": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "suite": { "type": ["string", "null"] },
+        "grep": { "type": ["string", "null"] }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale": { "enum": ["en", "ar"] },
+        "workers": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "retries": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "healing": { "enum": ["pass", "flag", "off"] },
+        "testTimeoutSeconds": { "type": "integer", "minimum": 5, "maximum": 900 },
+        "seed": { "type": "integer" }
+      }
+    },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  }
+}

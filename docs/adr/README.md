@@ -19,3 +19,4 @@ on 2026-11-18; the resulting design is in the [target architecture](../architect
 | [0012](0012-database-tenancy-and-keys.md) | Database: UUID keys with 0.1.0 keys kept, three-layer tenant isolation, immutable versions | Accepted |
 | [0013](0013-dotnet-platform-architecture.md) | .NET platform: ASP.NET Core minimal APIs, EF Core + Npgsql, SQL migrations, RLS tenancy, OIDC, not ABP | Accepted |
 | [0014](0014-engine-agent-contract.md) | Platform ↔ agent ↔ engine job and result contract v1 | Accepted |
+| [0015](0015-job-queue-and-agent-protocol.md) | Job queue in PostgreSQL (SKIP LOCKED) behind IJobQueue; outbound HTTPS agent protocol; agent tokens | Accepted |

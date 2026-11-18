@@ -18,6 +18,21 @@ public sealed class TenantMiddleware(RequestDelegate next)
     public async Task InvokeAsync(HttpContext ctx, TenantContext tenant, AtimthaDbContext db, ILogger<TenantMiddleware> logger)
     {
         var ct = ctx.RequestAborted;
+        if (Execution.AgentAuthenticationHandler.AgentId(ctx.User) is { } agentId)
+        {
+            // an execution agent acts in the organisation that owns it — never in one named by a header
+            if (Guid.TryParse(ctx.User.FindFirstValue(Execution.AgentAuthenticationHandler.AgentOrgClaim), out var agentOrg))
+            {
+                var org = await db.Organizations.AsNoTracking()
+                    .Where(o => o.Id == agentOrg && o.ArchivedAt == null)
+                    .Select(o => new { o.Id, o.Key })
+                    .FirstOrDefaultAsync(ct);
+                if (org is not null) tenant.SetOrganization(org.Id, org.Key);
+            }
+            using (logger.BeginScope(new Dictionary<string, object?> { ["AgentId"] = agentId, ["OrganizationId"] = tenant.OrganizationId }))
+                await next(ctx);
+            return;
+        }
         if (ctx.User.Identity?.IsAuthenticated == true)
         {
             var user = await UserResolver.ResolveAsync(db, ctx.User, ct);
