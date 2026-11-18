@@ -127,4 +127,7 @@ Integrity is enforced by JSON schemas (AJV) and loaders at read time and by `npm
 | Threat model | `docs/security/threat-model.md` | Written |
 | Input limits: request size, child-process arguments, static path check, zip import limits | `panel/limits.ts`, `panel/server.ts`, `tests/unit/limits.test.ts` | Implemented (tests written, not run) |
 | Security CI: npm audit, gitleaks (full history), CycloneDX SBOM | `.github/workflows/security.yml` | Implemented (not run yet) |
+| Self-healing governance: `run.healing` pass / flag / off, structured heals with the original failure, healing gate, report counts (ADR-0011) | `src/core/healing.ts`, resolver, base page, fixtures, runner, reporter, `app.schema.json` | Implemented (tests written, not run) |
+| PostgreSQL physical data model, first migration (ADR-0012) | `db/migrations/0001_initial_schema.*.sql`, `docs/architecture/physical-data-model.md` | Draft, not applied |
+| Report XSS integration test (T9) | `tests/integration/report-xss.test.ts` | Written, not run |
 | ADRs 0001–0004 accepted, 0005–0010 proposed | `docs/adr/*` | Written |

@@ -39,7 +39,7 @@
 | T6 | Elevation | Request values reach child processes as arguments | **Implemented** | `spawn` with an argument array, never a shell; plus `safeArg` on the three values used as standalone arguments (journey name, start address, collect address): no leading `-`, no control characters, length limit. Unit tests written, not yet run |
 | T7 | Information disclosure | Static file routes serve files outside their folder | **Implemented** | `isInside` compares whole path segments, so a sibling folder with the same prefix no longer matches. Unit tests written, not yet run |
 | T8 | Information disclosure | Evidence (screenshots, video, trace) shows client personal data and is shared with the report | **Open** | Report retention is 50 runs; no masking. Next (backlog §11, §13): masking rules, evidence permissions in the platform |
-| T9 | Tampering | Script injection through test data shown in the Smart Report | **Implemented** (0.1.0) | Report escapes HTML (`esc`) and embeds data with `<` escaped. Next: integration test with an XSS payload in a case title and data row |
+| T9 | Tampering | Script injection through test data shown in the Smart Report | **Implemented** (0.1.0) | Report escapes HTML (`esc`) and embeds data with `<` escaped. Integration test written (`tests/integration/report-xss.test.ts`: payloads in title, tags, steps, saved values, heals, error, last page), not yet run |
 | T10 | Information disclosure | Plain-text `secrets.yml` and session files on the tester's disk | **Accepted risk (proposed)** | Same exposure as any local credential file; risk owner to confirm. Platform: secrets vault (backlog §13) |
 | T11 | Tampering | Compromised npm dependency, leaked secret in history, unknown components | **Implemented** | `.github/workflows/security.yml` on every push: `npm audit --audit-level=high`, gitleaks over the full Git history, CycloneDX SBOM kept 90 days as a build artifact. Not yet run on GitHub |
 | T12 | Repudiation | No record of who changed a case or ran a suite | **Open** | Git history only. Platform: audit log (backlog §4, §5) |
@@ -63,6 +63,6 @@ These enter with the backlog's platform work and must be designed in, not added 
 ## 5. Next actions
 
 1. Run and pass the new tests for T4–T7 and the security workflow (T11); then mark them Tested.
-2. Integration test for T9 (XSS payload in a case title and data row, rendered in the Smart Report).
+2. Run the T9 report XSS test.
 3. Decide where client projects live (T13) and confirm the T10 accepted risk.
 4. Revisit this model when the target architecture (agents, tenancy) is accepted.
