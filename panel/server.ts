@@ -33,6 +33,7 @@ import { generateProject } from '../src/core/export/codegen';
 import { checkPages } from '../src/core/page-check';
 import { checkRequest, SECURITY_HEADERS } from './security';
 import { parsePorcelainZ, planCommit } from './git-guard';
+import { BODY_LIMITS, HttpError, checkZip, isInside, readLimitedBody, safeArg } from './limits';
 
 const PORT = Number(process.env.PANEL_PORT ?? 4400);
 const PW_CLI = path.join(ROOT, 'node_modules/@playwright/test/cli.js');
@@ -631,12 +632,17 @@ function exportProject(app: string): Buffer {
 }
 
 function importProject(b64: string, overwrite = false) {
-  const zip = new AdmZip(Buffer.from(b64, 'base64'));
+  if (typeof b64 !== 'string' || !b64) throw new HttpError(400, 'Choose a project zip to import');
+  const buf = Buffer.from(b64, 'base64');
+  let zip: AdmZip;
+  try { zip = new AdmZip(buf); } catch { throw new HttpError(400, 'This file is not a valid zip'); }
   const entries = zip.getEntries();
   const appYml = entries.find((e) => /^[^/]+\/app\.yml$/.test(e.entryName));
   if (!appYml) throw new Error('This zip is not a project export (no <project>/app.yml inside)');
   const key = appYml.entryName.split('/')[0];
   if (!/^[a-z][a-z0-9-]*$/.test(key)) throw new Error(`Invalid project folder "${key}"`);
+  // size, file count, zip bomb and path checks before anything is written (threat model T4)
+  checkZip(buf.length, entries, key);
   if (listApps().includes(key) && !overwrite) throw new Error(`Project "${key}" already exists`);
   for (const e of entries) {
     if (e.isDirectory) continue;
@@ -657,15 +663,12 @@ const json = (res: http.ServerResponse, code: number, data: unknown) => {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
 };
-const readBody = (req: http.IncomingMessage) => new Promise<any>((resolve) => {
-  let b = '';
-  req.on('data', (d) => (b += d));
-  req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
-});
+/** JSON body with a size limit (2 MB; project imports 70 MB) — threat model T5 */
+const readBody = (req: http.IncomingMessage, limit: number = BODY_LIMITS.default) => readLimitedBody(req, limit);
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css', '.webm': 'video/webm', '.zip': 'application/zip', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 function serveStatic(res: http.ServerResponse, base: string, rel: string) {
   const file = path.normalize(path.join(base, rel || 'index.html'));
-  if (!file.startsWith(base) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return json(res, 404, { error: 'not found' });
+  if (!isInside(base, file) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return json(res, 404, { error: 'not found' });
   res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 }
@@ -704,7 +707,7 @@ const server = http.createServer(async (req, res) => {
     // ---------------- journey recorder & navigation
     if (p === '/api/record' && req.method === 'POST') {
       const b = await readBody(req);
-      const args = [TSX_CLI, 'scripts/record.ts', b.name || 'Recorded journey', '--start', b.start || '/'];
+      const args = [TSX_CLI, 'scripts/record.ts', safeArg(b.name || 'Recorded journey', 'Journey name', 200), '--start', safeArg(b.start || '/', 'Start address')];
       if (b.auth && b.auth !== 'none') args.push('--auth', b.auth);
       if (b.locale) args.push('--lang', b.locale);
       startJob('record', `Recording "${b.name || 'journey'}"`, args, envVars(b));
@@ -726,7 +729,7 @@ const server = http.createServer(async (req, res) => {
     // ---------------- projects
     if (req.method === 'GET' && p === '/api/projects') return json(res, 200, projectsList());
     if (req.method === 'POST' && p === '/api/projects') return json(res, 200, { ok: true, ...createBlankProject(await readBody(req)) });
-    if (req.method === 'POST' && p === '/api/projects/import') { const b = await readBody(req); return json(res, 200, { ok: true, ...importProject(b.zip, b.overwrite) }); }
+    if (req.method === 'POST' && p === '/api/projects/import') { const b = await readBody(req, BODY_LIMITS.import); return json(res, 200, { ok: true, ...importProject(b.zip, b.overwrite) }); }
     if ((m = p.match(/^\/api\/projects\/([a-z][a-z0-9-]*)\/export-code$/)) && req.method === 'GET') {
       const app = appOf({ app: m[1] });
       const { files, warnings } = generateProject(app);
@@ -947,7 +950,7 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req);
       if (!/^[a-z][a-zA-Z0-9]*$/.test(b.page ?? '')) throw new Error('Page key must be camelCase, e.g. patientForm');
       startJob('harvest', `Harvest ${b.path} → or/drafts/${b.page}.page.yml`,
-        [TSX_CLI, 'scripts/or-harvester.ts', b.path || '/', b.page, ...(b.auth && b.auth !== 'none' ? ['--auth', b.auth] : []), ...(b.locale === 'ar' ? ['--lang', 'ar'] : [])], envVars(b));
+        [TSX_CLI, 'scripts/or-harvester.ts', safeArg(b.path || '/', 'Page address'), b.page, ...(b.auth && b.auth !== 'none' ? ['--auth', b.auth] : []), ...(b.locale === 'ar' ? ['--lang', 'ar'] : [])], envVars(b));
       return json(res, 200, { ok: true });
     }
     if (p === '/api/drafts/promote' && req.method === 'POST') {
@@ -1000,7 +1003,7 @@ const server = http.createServer(async (req, res) => {
 
     json(res, 404, { error: 'not found' });
   } catch (e) {
-    json(res, 400, { error: (e as Error).message });
+    json(res, e instanceof HttpError ? e.status : 400, { error: (e as Error).message });
   }
 });
 

@@ -125,4 +125,6 @@ Integrity is enforced by JSON schemas (AJV) and loaders at read time and by `npm
 | Fix: Git and branding modals were trapped in the 52 px top bar (its `backdrop-filter`), now rendered beside it | `panel/app/main.js` | Implemented, checked in the browser |
 | Browser integration tests: page collection and generators on the demo app (`npm run test:integration`) | `tests/integration/*` | Implemented, Tested |
 | Threat model | `docs/security/threat-model.md` | Written |
+| Input limits: request size, child-process arguments, static path check, zip import limits | `panel/limits.ts`, `panel/server.ts`, `tests/unit/limits.test.ts` | Implemented (tests written, not run) |
+| Security CI: npm audit, gitleaks (full history), CycloneDX SBOM | `.github/workflows/security.yml` | Implemented (not run yet) |
 | ADRs 0001–0004 accepted, 0005–0010 proposed | `docs/adr/*` | Written |

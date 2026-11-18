@@ -34,14 +34,14 @@
 | T1 | Spoofing, Tampering | A web page calls the panel API through DNS rebinding or a cross-site request and starts jobs, imports projects or commits | **Tested** | Host allowlist, same-origin and JSON-only checks (`panel/security.ts`, ADR-0002, 10 unit tests, live checks returned 421/403/415) |
 | T2 | Information disclosure | Panel commit pushes credentials or unrelated files to Git (`git add -A`) | **Tested** | Commits only `apps/` and `branding/`, by explicit path; blocks secret file names, keys and tokens, literal passwords in `app.yml`, and any password from `secrets.yml` (`panel/git-guard.ts`, ADR-0004, 7 unit tests) |
 | T3 | Information disclosure | Credentials typed into a case or recorded journey | **Implemented** (0.1.0) | Recorder writes known users as `{{user.<key>.password}}`; the commit check above catches real passwords that slip into files |
-| T4 | Tampering, Elevation | A malicious project zip writes outside `apps/<key>/` (zip-slip) or overwrites a project | **Implemented** (0.1.0) | Path normalisation and prefix check, key pattern check, overwrite needs confirmation, `secrets.yml` in the zip ignored. Next: unit test with a crafted zip; size and file-count limits (zip bomb) |
-| T5 | Denial of service | Very large request bodies or archives exhaust memory (`readBody` has no limit) | **Open** | Local-only today (T1 blocks remote callers). Next: body size limit (for example 50 MB for imports, 1 MB otherwise) |
-| T6 | Elevation | Request values reach child processes as arguments | **Implemented** (0.1.0) | `spawn` with an argument array, never a shell; page keys validated by pattern. Next: validate `path` and `name` arguments do not start with `-` |
-| T7 | Information disclosure | Static file routes serve files outside their folder | **Implemented** (0.1.0) | `path.normalize` + prefix check. Next: compare with a trailing separator so a sibling folder with the same prefix cannot match |
+| T4 | Tampering, Elevation | A malicious project zip writes outside `apps/<key>/` (zip-slip), overwrites a project, or is a zip bomb | **Implemented** | 0.1.0 path and key checks, plus `checkZip` (`panel/limits.ts`) before anything is written: 50 MB archive, 5,000 files, 200 MB extracted, 50 MB per file, 200× expansion ratio, no absolute or `..` paths, every file inside the project folder. Unit tests written incl. a crafted traversal entry (`tests/unit/limits.test.ts`), not yet run |
+| T5 | Denial of service | Very large request bodies exhaust memory (`readBody` had no limit) | **Implemented** | `readLimitedBody`: 2 MB per request, 70 MB for project imports, answers 413; invalid JSON now answers 400 instead of being read as empty. Unit tests written, not yet run |
+| T6 | Elevation | Request values reach child processes as arguments | **Implemented** | `spawn` with an argument array, never a shell; plus `safeArg` on the three values used as standalone arguments (journey name, start address, collect address): no leading `-`, no control characters, length limit. Unit tests written, not yet run |
+| T7 | Information disclosure | Static file routes serve files outside their folder | **Implemented** | `isInside` compares whole path segments, so a sibling folder with the same prefix no longer matches. Unit tests written, not yet run |
 | T8 | Information disclosure | Evidence (screenshots, video, trace) shows client personal data and is shared with the report | **Open** | Report retention is 50 runs; no masking. Next (backlog §11, §13): masking rules, evidence permissions in the platform |
 | T9 | Tampering | Script injection through test data shown in the Smart Report | **Implemented** (0.1.0) | Report escapes HTML (`esc`) and embeds data with `<` escaped. Next: integration test with an XSS payload in a case title and data row |
 | T10 | Information disclosure | Plain-text `secrets.yml` and session files on the tester's disk | **Accepted risk (proposed)** | Same exposure as any local credential file; risk owner to confirm. Platform: secrets vault (backlog §13) |
-| T11 | Tampering | Compromised npm dependency or browser download | **Open** | Lockfile present; no dependency scanning or SBOM. Next (backlog §12): dependency and secret scanning, CycloneDX SBOM in CI |
+| T11 | Tampering | Compromised npm dependency, leaked secret in history, unknown components | **Implemented** | `.github/workflows/security.yml` on every push: `npm audit --audit-level=high`, gitleaks over the full Git history, CycloneDX SBOM kept 90 days as a build artifact. Not yet run on GitHub |
 | T12 | Repudiation | No record of who changed a case or ran a suite | **Open** | Git history only. Platform: audit log (backlog §4, §5) |
 | T13 | Information disclosure | Public GitHub repository exposes client project files | **Open** | `LTZam-Tech/Atmit-ha` is public. Client projects (`apps/<client>/`) should live in private client repositories; decide before client work is committed |
 
@@ -62,8 +62,7 @@ These enter with the backlog's platform work and must be designed in, not added 
 
 ## 5. Next actions
 
-1. Unit tests for T4 (crafted zip) and T9 (XSS payload in the report).
-2. Body size limit (T5), argument validation (T6), path-prefix fix (T7).
+1. Run and pass the new tests for T4–T7 and the security workflow (T11); then mark them Tested.
+2. Integration test for T9 (XSS payload in a case title and data row, rendered in the Smart Report).
 3. Decide where client projects live (T13) and confirm the T10 accepted risk.
-4. Add dependency scanning, secret scanning and an SBOM to CI (T11).
-5. Revisit this model when the target architecture (agents, tenancy) is accepted.
+4. Revisit this model when the target architecture (agents, tenancy) is accepted.
