@@ -1,0 +1,12 @@
+# Edited in the Control Panel Case Builder
+case: WidgetDetails page opens
+type: positive
+module: WidgetDetails
+page: widgetDetails
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: widgetDetails.detailsTitle
+  - visible: widgetDetails.gname
+  - visible: widgetDetails.confirmBooking

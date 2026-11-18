@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: portalAccount
+url: /portal-account.html
+description: Found while exploring on 2026-11-03
+auth: demo
+readyWhen: accountTitle
+settings:
+  timeout: 10000
+elements:
+  accountTitle:
+    testid: account-title
+    fallback:
+      - role: heading
+        name: My account
+        exact: true
+      - text: My account
+        exact: true
+    control: heading
+  fullName:
+    role: textbox
+    name: Full name
+    exact: true
+    fallback:
+      - label: Full name
+      - id: fullName
+    control: textbox
+    semantic: fullName
+    rules:
+      required: true
+      maxlength: 60
+  phone:
+    role: textbox
+    name: Mobile
+    exact: true
+    fallback:
+      - label: Mobile
+      - id: phone
+    control: textbox
+    semantic: phone
+    rules:
+      required: true
+      pattern: "[0-9+ ]{8,15}"
+  saveAccount:
+    testid: save-account
+    fallback:
+      - role: button
+        name: Save
+        exact: true
+      - text: Save
+        exact: true
+    control: button
+  errorMessage:
+    css: .toast.toast-error:visible
+    control: alert
+    messages:
+      - Please fill your name and a valid mobile number
+  successMessage:
+    css: .toast.toast-success:visible
+    control: alert
+    messages:
+      - Your account was saved

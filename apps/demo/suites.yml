@@ -1,0 +1,8 @@
+# Run suites — pick cases by module, tag or name (edit in Control Panel → Run)
+suites:
+  smoke:
+    description: Quick check after every deployment
+    tags: ['@smoke']
+  profile:
+    description: Everything on the profile page
+    modules: [Profile]

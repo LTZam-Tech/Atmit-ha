@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: txIndex
+url: /tx/index.html
+description: Found while exploring on 2026-11-03
+readyWhen: seeWhatYourOperation
+settings:
+  timeout: 10000
+elements:
+  home:
+    role: link
+    name: Home
+    exact: true
+    fallback:
+      - text: Home
+        exact: true
+      - xpath: //body/header/nav/a[1]
+    control: link
+    href: /tx/index.html
+  bookADemo:
+    role: link
+    name: Book a demo
+    exact: true
+    fallback:
+      - text: Book a demo
+        exact: true
+      - xpath: //body/header/nav/a[2]
+    control: link
+    href: /tx/book.html
+  seeWhatYourOperation:
+    role: heading
+    name: See what your operation looks like when it runs here.
+    exact: true
+    fallback:
+      - text: See what your operation looks like when it runs here.
+        exact: true
+      - css: h1.hp-h1
+    control: heading

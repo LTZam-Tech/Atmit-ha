@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QA Demo Shop — Cart</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-page="cart">
+  <header><span data-test="cart-title" data-i18n="yourCart">Your cart</span>
+    <button data-test="logout" data-i18n="logout">Logout</button></header>
+  <div class="card">
+    <p data-test="order-ref">Order reference: <b data-test="order-number">ORD-48213</b></p>
+    <label>Notes <input data-test="notes" name="notes" maxlength="120" /></label>
+    <button data-test="continue-shopping" data-i18n="continue">Continue shopping</button>
+    <a data-test="checkout" href="/checkout.html">Checkout</a>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

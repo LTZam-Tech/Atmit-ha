@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QA Demo Shop — Checkout</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-page="checkout">
+  <header><span data-test="checkout-title">Checkout</span></header>
+  <form class="card" id="checkout-form">
+    <div class="ok" data-test="order-placed" hidden>Order placed</div>
+    <label for="shipName">Ship to</label>
+    <input id="shipName" name="shipName" required maxlength="40" />
+    <label for="shipCity">City</label>
+    <input id="shipCity" name="shipCity" required />
+    <label for="payment">Payment</label>
+    <select id="payment" name="payment"><option value="card">Card</option><option value="cod">Cash on delivery</option></select>
+    <button type="submit" data-test="place-order">Place order</button>
+  </form>
+  <script>
+    document.querySelector('#checkout-form').addEventListener('submit', (e) => { e.preventDefault(); document.querySelector('[data-test="order-placed"]').hidden = false; });
+  </script>
+</body>
+</html>

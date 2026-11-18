@@ -1,0 +1,6 @@
+# Navigation map — how to reach one page from another (edit in Control Panel → Pages → Map)
+edges:
+  - from: widget
+    to: widgetDetails
+    steps:
+      - click: widget.continue

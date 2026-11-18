@@ -1,0 +1,18 @@
+case: Place an order
+module: Cart
+description: Continues on the checkout page reached by "Go to checkout"
+continueFrom: { case: go-to-checkout }
+steps:
+  - fill: { element: checkout.shipName, value: "{{data.shipName}}" }
+  - fill: { element: checkout.shipCity, value: "{{data.shipCity}}" }
+  - select: { element: checkout.payment, value: "{{data.payment}}" }
+  - click: checkout.placeOrder
+outcomes:
+  success:
+    - visible: checkout.orderPlaced
+  error:
+    - hidden: checkout.orderPlaced
+data:
+  - { id: TC-ORD-001, title: card payment, type: positive, shipName: "{{faker.person.fullName}}", shipCity: "{{faker.location.city}}", payment: Card }
+  - { id: TC-ORD-002, title: cash on delivery, type: positive, shipName: "{{faker.person.fullName}}", shipCity: Amman, payment: Cash on delivery }
+  - { id: TC-ORD-101, title: name is required, type: negative, shipName: "", shipCity: Amman, payment: Card }

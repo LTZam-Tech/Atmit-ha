@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QA Demo Shop — Profile</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    fieldset{border:1px solid #cbd2d9;border-radius:6px;margin:0 0 14px;padding:8px 12px}
+    legend{font-size:13px;color:#52606d}
+    .opt{display:inline-flex;gap:6px;align-items:center;margin-inline-end:14px;font-size:14px}
+    .opt input{width:auto;display:inline;margin:0}
+    #calendar[hidden],#calendar2[hidden]{display:none!important}
+    select,textarea{display:block;width:100%;box-sizing:border-box;padding:10px;margin:8px 0 14px;border:1px solid #cbd2d9;border-radius:6px}
+    .ok{background:#e3f9e5;color:#0e5814;padding:10px;border-radius:6px;margin-bottom:12px}
+    label.fl{font-size:13px;color:#52606d}
+  </style>
+</head>
+<body data-page="profile">
+  <header><span data-test="profile-title" data-i18n="profile">My profile</span><button data-test="logout" data-i18n="logout">Logout</button></header>
+  <form class="card" id="profile-form" novalidate style="max-width:460px">
+    <div class="error" data-test="profile-error" role="alert" hidden></div>
+    <div class="ok" data-test="profile-saved" hidden data-i18n="saved">Profile saved</div>
+    <label class="fl" for="fullName">Full name</label>
+    <input id="fullName" name="fullName" required maxlength="40" />
+    <label class="fl" for="email">Email</label>
+    <input id="email" name="email" type="email" required maxlength="60" />
+    <label class="fl" for="phone">Mobile</label>
+    <input id="phone" name="phone" type="tel" pattern="[0-9+ ]{8,15}" />
+    <label class="fl" for="age">Age</label>
+    <input id="age" name="age" type="number" min="18" max="99" />
+    <fieldset><legend>Gender</legend>
+      <label class="opt"><input type="radio" name="gender" value="male" /> Male</label>
+      <label class="opt"><input type="radio" name="gender" value="female" /> Female</label>
+    </fieldset>
+    <label class="fl" for="country">Country</label>
+    <select id="country" name="country" required>
+      <option value="">— choose —</option><option value="jo">Jordan</option><option value="sa">Saudi Arabia</option><option value="ae">United Arab Emirates</option>
+    </select>
+    <fieldset><legend>Interests</legend>
+      <label class="opt"><input type="checkbox" name="interests" value="music" /> Music</label>
+      <label class="opt"><input type="checkbox" name="interests" value="sports" /> Sports</label>
+      <label class="opt"><input type="checkbox" name="interests" value="reading" /> Reading</label>
+    </fieldset>
+    <label class="opt"><input type="checkbox" id="newsletter" name="newsletter" /> Send me the newsletter</label>
+    <label class="fl" for="visitDate" style="display:block;margin-top:12px">Visit date</label>
+    <input id="visitDate" name="visitDate" type="text" readonly class="datepicker" data-date-format="mm/dd/yyyy" placeholder="mm/dd/yyyy" />
+    <div class="small" data-test="visit-summary"></div>
+    <div style="position:relative"><div id="calendar" data-test="calendar" hidden style="position:absolute;z-index:10;top:0;left:0;background:#fff;border:1px solid #ccc;padding:6px;display:flex;gap:4px;flex-wrap:wrap;width:260px;height:120px"></div></div>
+    <label class="fl" for="startDate" style="display:block;margin-top:12px">Start date</label>
+    <input id="startDate" name="startDate" class="datepicker" placeholder="dd/mm/yyyy" />
+    <div style="position:relative"><div id="calendar2" data-test="calendar2" hidden style="position:absolute;z-index:10;top:0;left:0;background:#fff;border:1px solid #ccc;width:300px;height:160px">calendar</div></div>
+    <label class="fl" for="end-date" style="display:block;margin-top:12px">End date</label>
+    <input id="end-date" name="endDate" type="date" placeholder="End Date" />
+    <label class="fl" for="bio" style="display:block;margin-top:12px">About me</label>
+    <textarea id="bio" name="bio" maxlength="200" rows="3"></textarea>
+    <button type="submit" data-test="save-profile" data-i18n="save">Save</button>
+  </form>
+  <script src="/app.js"></script>
+</body>
+</html>

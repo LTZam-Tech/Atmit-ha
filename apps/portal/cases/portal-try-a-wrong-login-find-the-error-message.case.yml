@@ -1,0 +1,28 @@
+# Recorded by 🧭 Explore
+case: "Portal: Wrong login is rejected"
+description: Recorded while exploring (Portal sign in)
+type: negative
+module: Auth
+page: portal
+user: none
+tags:
+  - "@explored"
+steps:
+  - fill:
+      element: portal.email
+      value: atimtha.wrong.user
+  - fill:
+      element: portal.password
+      value: Wrong#Pass123
+  - click: portal.login
+outcomes:
+  error:
+    - visible: portal.errorMessage
+    - text:
+        element: portal.errorMessage
+        contains: Email is not a valid email address
+    - visible: portal.failureDialog
+    - text:
+        element: portal.failureDialog
+        contains: Email is not a valid email address
+    - click: portal.failureDialogClose

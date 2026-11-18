@@ -1,0 +1,8 @@
+case: Profile needs a login
+module: Profile
+type: negative
+description: A logged-out visitor who opens the profile is sent to the login page
+url: /profile.html
+user: none
+steps:
+  - visible: login.username

@@ -1,0 +1,95 @@
+case: Login
+module: Login
+description: Same steps for every row — only the data and the expected outcome change
+page: login
+tags: ['@smoke-suite']
+
+steps:
+  - fill: { element: login.username, value: "{{data.username}}" }
+  - fill: { element: login.password, value: "{{data.password}}" }
+  - click: login.submit
+
+outcomes:
+  success:
+    - visible: inventory.title
+    - url: { contains: /inventory }
+  error:
+    - text: { element: login.errorMessage, equals: "{{data.message}}" }
+    - visible: login.submit
+
+data:
+  # ---------- Positive
+  - id: TC-LOGIN-001
+    title: valid user logs in
+    type: positive
+    outcome: success
+    tags: ['@smoke']
+    username: "{{user.standard.username}}"
+    password: "{{user.standard.password}}"
+  - id: TC-LOGIN-002
+    title: username with surrounding spaces is trimmed
+    type: positive
+    outcome: success
+    username: "  {{user.standard.username}}  "
+    password: "{{user.standard.password}}"
+
+  # ---------- Negative
+  - id: TC-LOGIN-101
+    title: wrong password
+    type: negative
+    outcome: error
+    tags: ['@smoke']
+    username: "{{user.standard.username}}"
+    password: "{{faker.internet.password}}"
+    message: "{{msg.invalidCredentials}}"
+  - id: TC-LOGIN-102
+    title: unknown user
+    type: negative
+    outcome: error
+    username: "{{faker.internet.username}}"
+    password: "{{faker.internet.password}}"
+    message: "{{msg.invalidCredentials}}"
+  - id: TC-LOGIN-103
+    title: empty username
+    type: negative
+    outcome: error
+    username: ""
+    password: "{{user.standard.password}}"
+    message: "{{msg.usernameRequired}}"
+  - id: TC-LOGIN-104
+    title: empty password
+    type: negative
+    outcome: error
+    username: "{{user.standard.username}}"
+    password: ""
+    message: "{{msg.passwordRequired}}"
+  - id: TC-LOGIN-105
+    title: locked out user
+    type: negative
+    outcome: error
+    username: "{{user.locked.username}}"
+    password: "{{user.locked.password}}"
+    message: "{{msg.lockedOut}}"
+  - id: TC-LOGIN-106
+    title: SQL injection in username
+    type: negative
+    outcome: error
+    tags: ['@security']
+    username: "{{negative.sqlInjection}}"
+    password: "{{user.standard.password}}"
+    message: "{{msg.invalidCredentials}}"
+  - id: TC-LOGIN-107
+    title: XSS payload in username
+    type: negative
+    outcome: error
+    tags: ['@security']
+    username: "{{negative.xss}}"
+    password: "{{user.standard.password}}"
+    message: "{{msg.invalidCredentials}}"
+  - id: TC-LOGIN-108
+    title: username is case-sensitive
+    type: negative
+    outcome: error
+    username: STANDARD_USER
+    password: "{{user.standard.password}}"
+    message: "{{msg.invalidCredentials}}"

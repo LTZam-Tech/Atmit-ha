@@ -1,0 +1,15 @@
+# Recorded by 🧭 Explore
+case: 'WidgetDetails: Click "+971 ▾" → Type "jo" in phoneCountrySearch → Choose "Jordan"'
+description: Recorded while exploring (Guest phone country)
+type: positive
+module: Booking
+page: widgetDetails
+user: none
+tags:
+  - "@explored"
+steps:
+  - click: widgetDetails.phoneCountry
+  - fill:
+      element: widgetDetails.phoneCountrySearch
+      value: jo
+  - click: widgetDetails.phoneCountryOptionJo

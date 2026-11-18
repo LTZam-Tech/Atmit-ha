@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Guest details</title>
+<style>body{font-family:Arial;margin:20px}.pc{position:relative;display:inline-block}.menu{display:none;position:absolute;background:#fff;border:1px solid #ccc;width:220px;z-index:5}.menu.open{display:block}
+.menu ul{list-style:none;margin:0;padding:0;max-height:160px;overflow:auto}.menu li{padding:6px 10px;cursor:pointer}.menu li:hover{background:#eef}</style></head>
+<body><h2 data-testid="details-title">Guest details</h2><p id="v"></p>
+<label for="gname">Name</label><input id="gname">
+<div style="margin:10px 0"><div class="pc"><button type="button" id="cc" aria-haspopup="listbox" data-testid="phone-country">+971 ▾</button>
+<div class="menu" data-testid="phone-country-menu"><input placeholder="Search country" data-testid="phone-country-search"><ul role="listbox"></ul></div></div>
+<input id="phone" placeholder="Mobile number" aria-label="Mobile number"></div>
+<button>Confirm booking</button>
+<script>
+document.getElementById('v').textContent = 'Venue: ' + (new URLSearchParams(location.search).get('venue') || 'missing');
+const C = [['AE','United Arab Emirates','+971'],['JO','Jordan','+962'],['SA','Saudi Arabia','+966'],['EG','Egypt','+20'],['KW','Kuwait','+965'],['QA','Qatar','+974'],['OM','Oman','+968'],['BH','Bahrain','+973']];
+const menu = document.querySelector('.menu'), ul = menu.querySelector('ul'), q = menu.querySelector('input');
+const draw = () => { ul.innerHTML = C.filter(c => c[1].toLowerCase().includes(q.value.toLowerCase())).map(c => `<li role="option" data-testid="phone-country-option-${c[0]}" data-code="${c[2]}">${c[1]}</li>`).join(''); };
+document.getElementById('cc').onclick = () => { menu.classList.toggle('open'); draw(); q.focus(); };
+q.oninput = draw;
+ul.onclick = (e) => { const li = e.target.closest('li'); if (!li) return; document.getElementById('cc').textContent = li.dataset.code + ' ▾'; menu.classList.remove('open'); };
+</script></body></html>

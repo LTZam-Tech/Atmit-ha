@@ -1,0 +1,11 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Login then my account
+module: Account
+tags:
+  - "@e2e"
+  - "@explored"
+steps:
+  - case: portal-valid-login
+  - case: portalhome-click-my-account
+  - case: portalaccount-submit-the-form-empty-find-the-error
+  - case: portalaccount-fill-the-form-with-valid-data-and-su

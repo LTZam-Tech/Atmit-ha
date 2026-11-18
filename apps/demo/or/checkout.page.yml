@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: checkout
+url: /checkout.html
+description: Checkout — reached from the cart (detected at the end of "Go to checkout")
+auth: standard
+readyWhen: checkoutTitle
+settings:
+  timeout: 10000
+elements:
+  checkoutTitle:
+    testid: checkout-title
+    fallback:
+      - text: Checkout
+        exact: true
+      - css: span
+  orderPlaced:
+    testid: order-placed
+    fallback:
+      - text: Order placed
+        exact: true
+      - css: div.ok
+  shipName:
+    role: textbox
+    name: Ship to
+    exact: true
+    fallback:
+      - label: Ship to
+      - id: shipName
+    control: textbox
+    rules:
+      required: true
+      maxlength: 40
+  shipCity:
+    role: textbox
+    name: City
+    exact: true
+    fallback:
+      - label: City
+      - id: shipCity
+    control: textbox
+    semantic: city
+    rules:
+      required: true
+  payment:
+    role: combobox
+    name: Payment
+    exact: true
+    fallback:
+      - label: Payment
+      - id: payment
+    control: select
+    options:
+      - Card
+      - Cash on delivery
+  placeOrder:
+    testid: place-order
+    fallback:
+      - role: button
+        name: Place order
+        exact: true
+      - text: Place order
+        exact: true
+    control: button

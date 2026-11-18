@@ -1,0 +1,224 @@
+# Edited in the Control Panel Case Builder
+case: Profile form
+module: Profile
+page: profile
+steps:
+  - fill:
+      element: profile.fullName
+      value: "{{data.fullName}}"
+  - fill:
+      element: profile.email
+      value: "{{data.email}}"
+  - fill:
+      element: profile.phone
+      value: "{{data.phone}}"
+  - fill:
+      element: profile.age
+      value: "{{data.age}}"
+  - choose:
+      element: profile.gender
+      value: "{{data.gender}}"
+  - select:
+      element: profile.country
+      value: "{{data.country}}"
+  - check:
+      element: profile.interests
+      value: Music
+  - check: profile.newsletter
+  - fill:
+      element: profile.bio
+      value: "{{data.bio}}"
+  - click: profile.saveProfile
+outcomes:
+  success:
+    - visible: profile.profileSaved
+  error:
+    - visible: profile.profileError
+data:
+  - id: TC-001
+    title: profile — valid data
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-002
+    title: fullName left empty
+    type: negative
+    outcome: error
+    fullName: ""
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-003
+    title: fullName at the maximum length (40)
+    type: positive
+    outcome: success
+    fullName: "{{negative.longText(40)}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-004
+    title: fullName typed one character over the maximum (41) — the field keeps only 40
+    type: positive
+    outcome: success
+    fullName: "{{negative.longText(41)}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-005
+    title: email left empty
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: ""
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-006
+    title: email at the maximum length (60)
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-007
+    title: email typed one character over the maximum (61) — the field keeps only 60
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-008
+    title: email without @
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: not-an-email
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-009
+    title: email without domain suffix
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: user@domain
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-010
+    title: letters in mobile number
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: abc12345
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-011
+    title: mobile number too short
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: "12"
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-012
+    title: age at the minimum (18)
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "18"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-013
+    title: age below the minimum (17)
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "17"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-014
+    title: age at the maximum (99)
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "99"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-NEG-015
+    title: age above the maximum (100)
+    type: negative
+    outcome: error
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "100"
+    gender: Male
+    country: Jordan
+    bio: "{{faker.lorem.sentence}}"
+  - id: TC-BVA-016
+    title: bio at the maximum length (200)
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{negative.longText(200)}}"
+  - id: TC-BVA-017
+    title: bio typed one character over the maximum (201) — the field keeps only 200
+    type: positive
+    outcome: success
+    fullName: "{{faker.person.fullName}}"
+    email: "{{faker.internet.email}}"
+    phone: 05{{faker.string.numeric(8)}}
+    age: "59"
+    gender: Male
+    country: Jordan
+    bio: "{{negative.longText(201)}}"

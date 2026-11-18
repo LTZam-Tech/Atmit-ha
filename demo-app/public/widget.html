@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Book a table</title>
+<style>
+body{font-family:Arial;margin:0;background:#eee}.w{width:380px;margin:20px auto;background:#fff;padding:16px;border-radius:8px}
+.dd{position:relative}.dd-btn{width:100%;padding:10px;border:1px solid #ccc;background:#fafafa;text-align:left;border-radius:6px}
+.dd-list{display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid #ccc;z-index:5}.dd-list.open{display:block}
+.dd-item{padding:9px 12px;cursor:pointer}.dd-item:hover{background:#eef}
+.cal{display:none;margin-top:10px;background:#3f6fa0;color:#fff;padding:8px;border-radius:6px}.cal.open{display:block}
+.cal table{width:100%;border-collapse:collapse}.cal td{text-align:center;padding:6px;cursor:pointer}.cal td.disabled{opacity:.4;cursor:default}
+.slots{display:none;gap:6px;flex-wrap:wrap;margin-top:10px}.slots.open{display:flex}.slots button{padding:8px 10px}
+.go{margin-top:14px;width:100%;padding:10px;background:#5b5fc7;color:#fff;border:0;border-radius:6px}.go:disabled{opacity:.5}
+</style></head>
+<body><div class="w" id="app"><div class="spinner" style="width:40px;height:40px;margin:80px auto;border:4px solid #ccc;border-top-color:#5b5fc7;border-radius:50%"></div></div>
+<script>
+// like a real booking widget: a spinner while the venue loads, then the content
+setTimeout(() => {
+const q = new URLSearchParams(location.search);
+const app = document.getElementById('app');
+if (!q.get('venue')) {
+  app.innerHTML = '<h2 data-testid="no-venue">Please choose a venue</h2><p>This page needs ?venue= in its address.</p>';
+} else {
+  app.innerHTML = `
+  <h2 data-testid="venue-title">ABC RestoLounge</h2>
+  <div data-testid="booking-filter-bar" style="display:flex;gap:6px;margin-bottom:8px">
+    <button type="button" aria-haspopup="listbox" class="fb">2 guests <svg class="chevron" width="10" height="10"></svg></button>
+    <button type="button" aria-haspopup="dialog" class="fb">Wed, Nov 4 <svg class="chevron" width="10" height="10"></svg></button>
+    <button type="button" aria-haspopup="listbox" class="fb">4:00 PM <svg class="chevron" width="10" height="10"></svg></button>
+  </div>
+  <div class="dd"><button type="button" class="dd-btn" id="guestsBtn" aria-haspopup="listbox">Select guests ▾</button>
+    <div class="dd-list guests-list">${[1,2,3,4,5,6].map(n => `<div class="dd-item">${n} guest${n>1?'s':''}</div>`).join('')}</div></div>
+  <div class="cal calendar"><div id="month"></div><table><tbody id="days"></tbody></table></div>
+  <div class="slots time-slots">${['5:30 PM','6:00 PM','6:30 PM','7:00 PM'].map(t => `<button type="button">${t}<br><small>Indoor</small></button>`).join('')}</div>
+  <p id="summary" data-testid="summary"></p>
+  <button class="go" id="go" disabled data-testid="continue">Continue to guest details</button>`;
+  const st = {};
+  const list = app.querySelector('.guests-list'), cal = app.querySelector('.calendar'), slots = app.querySelector('.time-slots');
+  const sum = () => document.getElementById('summary').textContent = [st.guests, st.day && `day ${st.day}`, st.time].filter(Boolean).join(' · ');
+  document.getElementById('guestsBtn').onclick = () => list.classList.toggle('open');
+  list.querySelectorAll('.dd-item').forEach(el => el.onclick = () => {
+    st.guests = el.textContent; document.getElementById('guestsBtn').textContent = el.textContent + ' ▾';
+    list.classList.remove('open');
+    cal.classList.add('open'); // the calendar opens by itself after the guests are chosen
+    sum();
+  });
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth(), last = new Date(y, m + 1, 0).getDate();
+  document.getElementById('month').textContent = now.toLocaleString('en', { month: 'long', year: 'numeric' });
+  let html = '<tr>';
+  for (let d = 1; d <= last; d++) { html += `<td class="${d <= now.getDate() ? 'disabled' : ''}">${d}</td>`; if (d % 7 === 0) html += '</tr><tr>'; }
+  document.getElementById('days').innerHTML = html + '</tr>';
+  app.querySelectorAll('#days td').forEach(td => td.onclick = () => {
+    if (td.classList.contains('disabled')) return;
+    st.day = td.textContent; cal.classList.remove('open'); slots.classList.add('open'); sum();
+  });
+  slots.querySelectorAll('button').forEach(b => b.onclick = () => { st.time = b.innerText.split('\n')[0]; document.getElementById('go').disabled = false; sum(); });
+  document.getElementById('go').onclick = () => { location.href = '/widget-details.html' + location.search; };
+}
+}, 2000);
+</script></body></html>

@@ -1,0 +1,10 @@
+# Edited in the Control Panel Case Builder
+case: TxIndex page opens
+type: positive
+module: TxIndex
+page: txIndex
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: txIndex.seeWhatYourOperation

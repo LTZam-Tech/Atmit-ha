@@ -1,0 +1,9 @@
+node_modules/
+reports/
+.auth/
+test-results/
+apps/.current
+apps/*/secrets.yml
+apps/*/or/drafts/
+apps/*/or/*.backup-*.yml
+apps/*/or/.visual/

@@ -1,0 +1,14 @@
+# Recorded by 🧭 Explore
+case: 'PortalHome: Click "My account"'
+description: Recorded while exploring (Login then my account)
+type: positive
+module: Account
+page: portalHome
+user: demo
+tags:
+  - "@explored"
+steps:
+  - click: portalHome.myAccount
+outcomes:
+  success:
+    - visible: portalAccount.accountTitle

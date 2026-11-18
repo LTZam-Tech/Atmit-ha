@@ -1,0 +1,312 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "smart-or-page",
+  "title": "Smart Object Repository — page definition",
+  "type": "object",
+  "required": [
+    "page",
+    "elements"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "page": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9]*$",
+      "description": "Unique page key used in code"
+    },
+    "url": {
+      "type": "string",
+      "description": "Path relative to BASE_URL"
+    },
+    "open": {
+      "enum": [
+        "url",
+        "navigate"
+      ],
+      "description": "url (default): open by its URL · navigate: reach it through the navigation map"
+    },
+    "description": {
+      "type": "string"
+    },
+    "readyWhen": {
+      "type": "string",
+      "description": "Element that proves the page is loaded"
+    },
+    "auth": {
+      "type": "string",
+      "description": "Session needed to start on this page: a user key from data/static/users.json (e.g. standard) or 'none'"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^@"
+      },
+      "description": "Test tags that belong to this page (default: @<page>)"
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout": {
+          "type": "integer",
+          "minimum": 500,
+          "description": "Max wait to find an element (ms)"
+        },
+        "defaultStrategy": {
+          "enum": [
+            "testid",
+            "id",
+            "css",
+            "xpath"
+          ],
+          "description": "Strategy used when an element is written as a plain string"
+        },
+        "fallback": {
+          "type": "boolean",
+          "description": "Enable self-healing fallbacks for this page (default true)"
+        }
+      }
+    },
+    "elements": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]*$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Shorthand — value for settings.defaultStrategy"
+          },
+          {
+            "$ref": "#/definitions/element"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "text": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "en"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "en": {
+              "type": "string"
+            },
+            "ar": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "strategy": {
+      "type": "object",
+      "properties": {
+        "testid": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/definitions/text"
+        },
+        "exact": {
+          "type": "boolean"
+        },
+        "label": {
+          "$ref": "#/definitions/text"
+        },
+        "placeholder": {
+          "$ref": "#/definitions/text"
+        },
+        "text": {
+          "$ref": "#/definitions/text"
+        },
+        "alt": {
+          "$ref": "#/definitions/text"
+        },
+        "title": {
+          "$ref": "#/definitions/text"
+        },
+        "id": {
+          "type": "string"
+        },
+        "css": {
+          "type": "string"
+        },
+        "xpath": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "testid"
+          ]
+        },
+        {
+          "required": [
+            "role"
+          ]
+        },
+        {
+          "required": [
+            "label"
+          ]
+        },
+        {
+          "required": [
+            "placeholder"
+          ]
+        },
+        {
+          "required": [
+            "text"
+          ]
+        },
+        {
+          "required": [
+            "alt"
+          ]
+        },
+        {
+          "required": [
+            "title"
+          ]
+        },
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "css"
+          ]
+        },
+        {
+          "required": [
+            "xpath"
+          ]
+        }
+      ]
+    },
+    "element": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/strategy"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "within": {
+              "type": "string",
+              "description": "Parent element name — search only inside it"
+            },
+            "frame": {
+              "type": "string",
+              "description": "CSS selector of the iframe that contains the element"
+            },
+            "nth": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasText": {
+              "$ref": "#/definitions/text"
+            },
+            "fallback": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/strategy"
+              },
+              "description": "Alternatives tried in order when the primary locator finds nothing"
+            },
+            "control": {
+              "type": "string",
+              "description": "Control type (textbox, password, select, checkbox, button, link, heading, alert…)"
+            },
+            "semantic": {
+              "type": "string",
+              "description": "Meaning of the field (email, phone, date, nationalId…) — drives generated and negative data"
+            },
+            "rules": {
+              "type": "object",
+              "description": "HTML validation rules (required, maxlength, minlength, min, max, pattern)",
+              "properties": {
+                "required": {
+                  "type": "boolean"
+                },
+                "maxlength": {
+                  "type": "integer"
+                },
+                "minlength": {
+                  "type": "integer"
+                },
+                "min": {
+                  "type": [
+                    "number",
+                    "string"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "number",
+                    "string"
+                  ]
+                },
+                "pattern": {
+                  "type": "string"
+                },
+                "readonly": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Choices read from the page (dropdown options, radio/checkbox group labels)"
+            },
+            "format": {
+              "type": "string",
+              "description": "Date format the field expects (yyyy yy MM M dd d), e.g. MM/dd/yyyy"
+            },
+            "href": {
+              "type": "string",
+              "description": "Link target: a path on this site (/contact) or a full address — generated link checks verify it"
+            },
+            "newTab": {
+              "type": "boolean",
+              "description": "The link opens a new tab or window"
+            },
+            "messages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Texts seen in this message / dialog (collected while exploring) — used by generated checks"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

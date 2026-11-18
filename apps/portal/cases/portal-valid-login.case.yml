@@ -1,0 +1,19 @@
+case: "Portal: valid login"
+type: positive
+module: Auth
+page: portal
+user: none
+tags:
+  - "@smoke"
+steps:
+  - fill:
+      element: portal.email
+      value: "{{user.demo.username}}"
+  - fill:
+      element: portal.password
+      value: "{{user.demo.password}}"
+  - click: portal.login
+outcomes:
+  success:
+    - url:
+        contains: /portal-home.html

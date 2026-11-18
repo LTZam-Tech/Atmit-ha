@@ -1,0 +1,18 @@
+# Edited in the Control Panel Case Builder
+case: Portal — links lead to the right pages
+type: positive
+module: Portal
+page: portal
+tags:
+  - "@navigation"
+  - "@links"
+  - "@generated"
+steps:
+  - link:
+      element: portal.contactUs
+      contains: /contact.html
+  - open: portal
+  - click: portal.forgot
+  - url:
+      contains: /forgot.html
+  - visible: forgot.resetTitle

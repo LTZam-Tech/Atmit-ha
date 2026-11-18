@@ -1,0 +1,13 @@
+# Edited in the Control Panel Case Builder
+case: Portal page opens
+type: positive
+module: Portal
+page: portal
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: portal.welcomeBack
+  - visible: portal.email
+  - visible: portal.password
+  - visible: portal.login

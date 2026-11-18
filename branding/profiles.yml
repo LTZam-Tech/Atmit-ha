@@ -1,0 +1,6 @@
+# Report branding profiles — edit in Control Panel → 🎨 Report branding
+default:
+  name: Default
+  company: QA Team
+  primaryColor: "#2a78d6"
+  reportTitle: Automation Smart Report

@@ -1,0 +1,18 @@
+# Recorded by 🧭 Explore
+case: 'Widget: Click "Select guests ▾" … Click "Continue to guest details" (5 steps)'
+description: Recorded while exploring (Book a table)
+type: positive
+module: Booking
+page: widget
+user: none
+tags:
+  - "@explored"
+steps:
+  - click: widget.guestsBtn
+  - click: widget.guestsListOption(option=1 guest)
+  - click: widget.calendarDay(day={{date.plusDays(1, d)}})
+  - click: widget.timeSlot(time=5:30 PM)
+  - click: widget.continue
+outcomes:
+  success:
+    - visible: widgetDetails.detailsTitle

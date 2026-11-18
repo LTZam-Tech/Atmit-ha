@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Portal — My account</title>
+<style>body{font-family:Arial;margin:0}main{padding:20px;max-width:420px}label{display:block;margin:12px 0 4px}input{width:100%;padding:8px;box-sizing:border-box}
+#toast-container{position:fixed;top:20px;right:0}.toast{padding:14px;width:300px;color:#fff}.toast-success{background:#2e8b57}.toast-error{background:#d9534f}</style></head>
+<body><main><h1 data-testid="account-title">My account</h1>
+<form id="f" novalidate>
+<label for="fullName">Full name</label><input id="fullName" name="fullName" required maxlength="60">
+<label for="phone">Mobile</label><input id="phone" name="phone" type="tel" pattern="[0-9+ ]{8,15}" required>
+<button type="submit" data-testid="save-account" style="margin-top:14px">Save</button>
+</form></main><div id="toast-container"></div>
+<script>
+const toast = (cls, msg) => { const t = document.createElement('div'); t.className = 'toast ' + cls; t.textContent = msg; document.getElementById('toast-container').appendChild(t); setTimeout(() => t.remove(), 2500); };
+document.getElementById('f').onsubmit = (e) => { e.preventDefault(); const f = e.target;
+  if (!f.fullName.value.trim() || !/^[0-9+ ]{8,15}$/.test(f.phone.value)) return toast('toast-error', 'Please fill your name and a valid mobile number');
+  toast('toast-success', 'Your account was saved'); };
+</script></body></html>

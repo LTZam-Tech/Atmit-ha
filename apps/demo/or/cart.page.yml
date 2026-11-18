@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: cart
+url: /cart.html
+open: navigate          # reached by clicking the cart link (navigation.yml), not by URL
+description: Cart — opened through the navigation map
+readyWhen: title
+auth: standard
+tags: ['@cart']
+settings:
+  defaultStrategy: testid
+elements:
+  title:
+    testid: cart-title
+    fallback:
+      - text: { en: Your cart, ar: سلتك }
+  orderNumber: order-number
+  notes:
+    testid: notes
+    control: textbox
+    semantic: description
+    rules: { maxlength: 120 }
+  continueShopping: continue-shopping
+  logout: logout
+  checkout:
+    testid: checkout
+    fallback:
+      - role: link
+        name: Checkout
+    control: link

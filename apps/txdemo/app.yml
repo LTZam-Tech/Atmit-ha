@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../src/core/app.schema.json
+name: Transitions
+testIdAttribute: data-testid
+languages:
+  - en
+environments:
+  uat:
+    baseURL: http://localhost:4173

@@ -1,0 +1,28 @@
+# Recorded by 🧭 Explore
+case: "PortalAccount: Fill the form with valid data and submit"
+description: Recorded while exploring (Login then my account)
+type: positive
+module: Account
+page: portalAccount
+user: demo
+tags:
+  - "@explored"
+steps:
+  - fill:
+      element: portalAccount.fullName
+      value: "{{data.fullName}}"
+  - fill:
+      element: portalAccount.phone
+      value: "{{data.phone}}"
+  - click: portalAccount.saveAccount
+outcomes:
+  success:
+    - visible: portalAccount.successMessage
+    - text:
+        element: portalAccount.successMessage
+        contains: Your account was saved
+data:
+  - id: TC-001
+    title: valid data
+    fullName: "{{faker.person.fullName}}"
+    phone: 05{{faker.string.numeric(8)}}

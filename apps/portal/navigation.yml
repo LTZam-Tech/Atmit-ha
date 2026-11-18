@@ -1,0 +1,10 @@
+# Navigation map — how to reach one page from another (edit in Control Panel → Pages → Map)
+edges:
+  - from: portal
+    to: forgot
+    steps:
+      - click: portal.forgot
+  - from: portalHome
+    to: portalAccount
+    steps:
+      - click: portalHome.myAccount

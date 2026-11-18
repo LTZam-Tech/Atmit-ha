@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: inventory
+url: /inventory.html
+description: Products list (after login)
+readyWhen: title
+auth: standard # tests start already logged in as this user
+tags: [ "@inventory" ]
+
+settings:
+  defaultStrategy: testid
+
+elements:
+  title:
+    testid: title
+    fallback:
+      - text: { en: Products, ar: المنتجات }
+  logout: logout
+  cartLink: cart-link
+  cartBadge: cart-badge
+  items: inventory-item
+
+  # Dynamic element — {sku} is passed from the test/page
+  item:
+    css: "[data-test='inventory-item'][data-sku='{sku}']"
+
+  # Searched only inside the matching item card
+  addToCart:
+    role: button
+    within: item

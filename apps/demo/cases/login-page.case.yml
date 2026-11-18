@@ -1,0 +1,13 @@
+case: Login page layout
+module: Login
+page: login
+steps:
+  - visible: login.username
+  - visible: login.password
+  # primary test id is not in the app yet → found by fallback, flagged in the report's OR health
+  - name: Forgot password link visible
+    visible: login.forgotPassword
+data:
+  - id: TC-LOGIN-201
+    title: login page shows all fields and the forgot-password link
+    type: positive

@@ -1,0 +1,17 @@
+case: Visit date (read-only date picker)
+module: Profile
+type: positive
+description: The read-only calendar field gets its value and its calendar is closed, so it does not cover the fields below; the native date field accepts any common date format
+page: profile
+steps:
+  - fill: { element: profile.visitDate, value: "{{data.visitDate}}" }
+  - hidden: profile.calendar
+  - text: { element: profile.visitSummary, contains: "{{data.visitDate}}" }
+  - fill: { element: profile.startDate, value: "{{date.today}}" }
+  - hidden: profile.calendar2
+  - fill: { element: profile.endDate, value: "{{data.endDate}}" }
+  - value: { element: profile.endDate, equals: "{{data.endDateStored}}" }
+  - click: profile.bio
+data:
+  - { id: TC-DATE-001, title: today in the page format, visitDate: "{{date.today(MM/dd/yyyy)}}", endDate: 31/12/2026, endDateStored: 2026-12-31 }
+  - { id: TC-DATE-002, title: one week ahead, visitDate: "{{date.plusDays(7, MM/dd/yyyy)}}", endDate: 2027-01-15, endDateStored: 2027-01-15 }

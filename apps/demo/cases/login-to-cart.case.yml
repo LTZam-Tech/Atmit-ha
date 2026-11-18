@@ -1,0 +1,7 @@
+case: From login to the cart
+module: Login
+description: Replays a valid login, then continues on the page it ended on
+continueFrom: { case: login, row: TC-LOGIN-001 }
+steps:
+  - click: inventory.cartLink
+  - visible: cart.title

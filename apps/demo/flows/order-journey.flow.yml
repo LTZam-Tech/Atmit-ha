@@ -1,0 +1,12 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Order journey (login → cart → checkout → order)
+module: Cart
+description: A shopper logs in, goes to the cart, checks out and places an order in one session; then a logged-in user checks the profile dates
+tags: ['@e2e']
+steps:
+  - case: login-to-cart
+  - case: go-to-checkout
+  - case: place-order
+    row: TC-ORD-002
+  - case: visit-date
+    as: standard

@@ -1,0 +1,13 @@
+# Edited in the Control Panel Case Builder
+case: TxBook page opens
+type: positive
+module: TxBook
+page: txBook
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: txBook.bookADemo2
+  - visible: txBook.name
+  - visible: txBook.email
+  - visible: txBook.requestDemo

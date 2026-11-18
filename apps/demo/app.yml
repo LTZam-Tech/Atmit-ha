@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../src/core/app.schema.json
+name: QA Demo Shop
+description: Bundled bilingual demo app used to prove the framework end to end
+testIdAttribute: data-test
+languages: [ en, ar ]
+
+environments:
+  demo:
+    baseURL: http://localhost:4173
+    startDemoApp: true
+  saucedemo:
+    baseURL: https://www.saucedemo.com
+
+# How the runner logs in to create saved sessions (used by pages with `auth: <user>`)
+login:
+  page: login
+  fields: { username: username, password: password, submit: submit }
+  success: { element: inventory.title }
+
+# Demo passwords are public. For real apps keep passwords in secrets.yml (git-ignored)
+users:
+  standard: { username: standard_user, password: secret_sauce }
+  locked: { username: locked_out_user, password: secret_sauce }
+  slow: { username: slow_user, password: secret_sauce }

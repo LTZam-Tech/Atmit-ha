@@ -1,0 +1,17 @@
+case: Cart (navigation + runtime values)
+module: Cart
+description: The cart opens through the navigation map; the order number is captured and reused
+page: cart
+tags: ['@cart']
+steps:
+  - name: Capture the order number
+    save: { element: cart.orderNumber, as: orderNo }
+  - save: { as: pageName, pattern: "/(\\w+)\\.html" }
+  - fill: { element: cart.notes, value: "Ref {{var.orderNo}} — {{data.note}}" }
+  - value: { element: cart.notes, contains: "{{var.orderNo}}" }
+  - url: { contains: "{{var.pageName}}" }
+data:
+  - id: TC-CART-001
+    title: order number is captured and reused in the notes
+    type: positive
+    note: "{{faker.lorem.words(3)}}"

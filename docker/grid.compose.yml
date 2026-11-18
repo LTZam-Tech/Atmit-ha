@@ -1,0 +1,12 @@
+# Internal Playwright Grid — the image version MUST match @playwright/test in package.json
+#   docker compose -f docker/grid.compose.yml up -d --scale pw-node=1
+#   TARGET=grid GRID_WS_URL=ws://<grid-host>:3000/ npm test
+services:
+  pw-node:
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    command: ["npx", "-y", "playwright@1.63.0", "run-server", "--port", "3000", "--host", "0.0.0.0"]
+    ports:
+      - "3000:3000"
+    init: true
+    ipc: host
+    restart: unless-stopped

@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: login
+url: /
+description: Login screen
+readyWhen: submit
+auth: none                     # start logged-out
+tags: ['@login']
+
+settings:
+  timeout: 8000
+  defaultStrategy: testid      # plain strings below are test ids
+
+elements:
+  # Shorthand — uses defaultStrategy (testid)
+  username: username
+  password: password
+  errorMessage: error
+
+  # Full form with bilingual name + fallbacks
+  submit:
+    role: button
+    name: { en: Login, ar: دخول }
+    exact: true
+    fallback:
+      - testid: login-button
+      - id: login-button
+      - css: "form button[type=submit]"
+
+  # Primary is the test id we asked the devs to add (not there yet) →
+  # the fallback finds it and the Smart Report flags it as "healed".
+  forgotPassword:
+    testid: forgot-password
+    fallback:
+      - text: { en: Forgot password?, ar: نسيت كلمة المرور؟ }
+      - css: a.forgot-link

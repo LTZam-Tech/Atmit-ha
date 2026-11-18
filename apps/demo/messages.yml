@@ -1,0 +1,11 @@
+# Expected UI messages — use in cases as {{msg.<key>}}; the run language picks the column
+en:
+  usernameRequired: "Epic sadface: Username is required"
+  passwordRequired: "Epic sadface: Password is required"
+  lockedOut: "Epic sadface: Sorry, this user has been locked out."
+  invalidCredentials: "Epic sadface: Username and password do not match any user in this service"
+ar:
+  usernameRequired: "خطأ: اسم المستخدم مطلوب"
+  passwordRequired: "خطأ: كلمة المرور مطلوبة"
+  lockedOut: "خطأ: تم قفل هذا المستخدم."
+  invalidCredentials: "خطأ: اسم المستخدم وكلمة المرور غير متطابقين"

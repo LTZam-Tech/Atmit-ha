@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../../src/core/app.schema.json
+name: Portal
+testIdAttribute: data-testid
+languages:
+  - en
+environments:
+  uat:
+    baseURL: http://localhost:4173
+users:
+  demo:
+    username: demo@portal.test
+    description: portal customer
+login:
+  page: portal
+  fields:
+    username: email
+    password: password
+    submit: login
+  success:
+    urlContains: /portal-home.html

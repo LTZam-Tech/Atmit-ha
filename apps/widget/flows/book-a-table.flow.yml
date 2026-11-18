@@ -1,0 +1,8 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Book a table
+module: Booking
+tags:
+  - "@e2e"
+  - "@explored"
+steps:
+  - case: widget-click-select-guests-click-continue-to-guest

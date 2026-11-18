@@ -1,0 +1,12 @@
+# Edited in the Control Panel Case Builder
+case: Widget page opens
+type: positive
+module: Widget
+page: widget
+tags:
+  - "@smoke"
+  - "@generated"
+steps:
+  - visible: widget.venueTitle
+  - visible: widget.el2Guests
+  - visible: widget.wedNov4

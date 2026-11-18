@@ -1,0 +1,8 @@
+case: Order number reused on the profile
+module: Cart
+description: Runs after the cart case and uses the order number it saved
+dependsOn: [cart]
+page: profile
+steps:
+  - fill: { element: profile.bio, value: "Order {{var.orderNo}}" }
+  - value: { element: profile.bio, contains: "{{var.orderNo}}" }

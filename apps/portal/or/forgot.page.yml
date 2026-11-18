@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: forgot
+url: /forgot.html
+description: Found while exploring on 2026-11-03 — reached after "Try a wrong login — find the error message"
+readyWhen: resetTitle
+settings:
+  timeout: 10000
+elements:
+  resetTitle:
+    testid: reset-title
+    fallback:
+      - role: heading
+        name: Reset your password
+        exact: true
+      - text: Reset your password
+        exact: true
+    control: heading
+  email:
+    role: textbox
+    name: Email
+    exact: true
+    fallback:
+      - label: Email
+      - css: input
+    control: textbox
+    semantic: email
+  sendLink:
+    role: button
+    name: Send link
+    exact: true
+    fallback:
+      - text: Send link
+        exact: true
+      - css: button
+    control: button

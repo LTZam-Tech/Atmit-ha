@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: txBook
+url: /tx/book.html
+description: Found while exploring on 2026-11-03
+readyWhen: bookADemo2
+settings:
+  timeout: 10000
+elements:
+  home:
+    role: link
+    name: Home
+    exact: true
+    fallback:
+      - text: Home
+        exact: true
+      - xpath: //body/header/nav/a[1]
+    control: link
+    href: /tx/index.html
+  bookADemo:
+    role: link
+    name: Book a demo
+    exact: true
+    fallback:
+      - xpath: //body/header/nav/a[2]
+    control: link
+    href: /tx/book.html
+  bookADemo2:
+    role: heading
+    name: Book a demo
+    exact: true
+    fallback:
+      - css: h1.bd-h1
+      - xpath: //body/h1
+    control: heading
+  name:
+    role: textbox
+    name: Name
+    exact: true
+    fallback:
+      - label: Name
+      - id: n
+    control: textbox
+    rules:
+      required: true
+  email:
+    role: textbox
+    name: Email
+    exact: true
+    fallback:
+      - label: Email
+      - id: em
+    control: textbox
+    semantic: email
+    rules:
+      required: true
+  requestDemo:
+    role: button
+    name: Request demo
+    exact: true
+    fallback:
+      - text: Request demo
+        exact: true
+      - css: button[type="submit"]
+    control: button

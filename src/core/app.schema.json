@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Application under test — apps/<app>/app.yml",
+  "type": "object",
+  "required": [
+    "name",
+    "environments"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "testIdAttribute": {
+      "type": "string",
+      "description": "Attribute used by testid locators, e.g. data-testid"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "en",
+          "ar"
+        ]
+      }
+    },
+    "defaultEnv": {
+      "type": "string"
+    },
+    "branding": {
+      "type": "string",
+      "description": "Report branding profile key (branding/profiles.yml)"
+    },
+    "environments": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "baseURL"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "baseURL": {
+            "type": "string"
+          },
+          "startDemoApp": {
+            "type": "boolean"
+          },
+          "ignoreHTTPSErrors": {
+            "type": "boolean"
+          },
+          "httpCredentials": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "login": {
+      "type": "object",
+      "required": [
+        "page",
+        "fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "type": "string",
+          "description": "OR page key of the login screen"
+        },
+        "fields": {
+          "type": "object",
+          "required": [
+            "username",
+            "password",
+            "submit"
+          ],
+          "properties": {
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "submit": {
+              "type": "string"
+            }
+          }
+        },
+        "success": {
+          "type": "object",
+          "description": "How to know login worked",
+          "properties": {
+            "element": {
+              "type": "string",
+              "description": "page.element that is visible after login"
+            },
+            "urlContains": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "users": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "Prefer secrets.yml or ${ENV_VAR}"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How tests run on this computer",
+      "properties": {
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16,
+          "description": "Browsers running at the same time (default 2)"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "testTimeout": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 900,
+          "description": "Seconds one test may take (default 60)"
+        },
+        "waitTimeout": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Seconds to wait for an element / check (default 10)"
+        }
+      }
+    }
+  }
+}

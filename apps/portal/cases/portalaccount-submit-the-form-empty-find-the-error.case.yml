@@ -1,0 +1,17 @@
+# Recorded by 🧭 Explore
+case: "PortalAccount: Empty form is rejected"
+description: Recorded while exploring (Login then my account)
+type: negative
+module: Account
+page: portalAccount
+user: demo
+tags:
+  - "@explored"
+steps:
+  - click: portalAccount.saveAccount
+outcomes:
+  error:
+    - visible: portalAccount.errorMessage
+    - text:
+        element: portalAccount.errorMessage
+        contains: Please fill your name and a valid mobile number

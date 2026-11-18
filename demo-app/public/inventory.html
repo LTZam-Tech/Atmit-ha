@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>QA Demo Shop — Products</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-page="inventory">
+  <header>
+    <span data-test="title" data-i18n="products">Products</span>
+    <span>
+      <a href="/profile.html" data-test="profile-link" style="color:#fff;margin-inline-end:12px">Profile</a>
+      <a href="/cart.html" data-test="cart-link" style="color:#fff"><span data-i18n="cart">Cart</span></a><span class="badge" data-test="cart-badge" hidden></span>
+      <button data-test="logout" data-i18n="logout">Logout</button>
+    </span>
+  </header>
+  <div class="grid">
+    <div class="item" data-test="inventory-item" data-sku="backpack">
+      <h3>Backpack</h3><p>$29.99</p>
+      <button data-test="add-backpack" data-i18n="add">Add to cart</button>
+    </div>
+    <div class="item" data-test="inventory-item" data-sku="bike-light">
+      <h3>Bike Light</h3><p>$9.99</p>
+      <button data-test="add-bike-light" data-i18n="add">Add to cart</button>
+    </div>
+    <div class="item" data-test="inventory-item" data-sku="t-shirt">
+      <h3>T-Shirt</h3><p>$15.99</p>
+      <button data-test="add-t-shirt" data-i18n="add">Add to cart</button>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

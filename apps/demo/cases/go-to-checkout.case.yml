@@ -1,0 +1,6 @@
+case: Go to checkout
+module: Cart
+page: cart
+steps:
+  - click: cart.checkout
+  - url: { contains: checkout }

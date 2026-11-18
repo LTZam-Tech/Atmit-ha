@@ -1,0 +1,31 @@
+# Edited in the Control Panel Case Builder
+case: Portal — invalid formats are rejected
+type: negative
+module: Portal
+page: portal
+tags:
+  - "@regression"
+  - "@negative"
+  - "@generated"
+steps:
+  - fill:
+      element: portal.email
+      value: "{{data.email}}"
+  - fill:
+      element: portal.password
+      value: "{{data.password}}"
+  - click: portal.login
+outcomes:
+  error:
+    - visible: portal.errorMessage
+    - visible: portal.failureDialog
+    - click: portal.failureDialogClose
+data:
+  - id: TC-FMT-001
+    title: email without @
+    email: not-an-email
+    password: "{{faker.internet.password}}"
+  - id: TC-FMT-002
+    title: email without domain suffix
+    email: user@domain
+    password: "{{faker.internet.password}}"

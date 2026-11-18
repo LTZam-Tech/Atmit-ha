@@ -1,0 +1,24 @@
+# Navigation map — how to reach one page from another (edit in Control Panel → Pages → Map)
+edges:
+  - from: inventory
+    to: cart
+    steps:
+      - click: inventory.cartLink
+  - from: cart
+    to: inventory
+    steps:
+      - click: cart.continueShopping
+  - from: login
+    to: inventory
+    steps:
+      - fill:
+          element: login.username
+          value: "{{user.standard.username}}"
+      - fill:
+          element: login.password
+          value: "{{user.standard.password}}"
+      - click: login.submit
+  - from: cart
+    to: checkout
+    steps:
+      - click: cart.checkout

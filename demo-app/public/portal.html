@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Portal — Sign in</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#16202c;color:#ccc;min-height:100vh}
+.top{display:flex;justify-content:flex-end;padding:14px 20px;gap:6px}.top a{color:#ccc}
+.card{width:340px;margin:120px 0 0 110px;background:#888;border-radius:6px;padding:30px 75px}
+.card h2{color:#16202c;font-weight:400;text-align:center;margin:0 0 20px}
+.card input{display:block;width:100%;box-sizing:border-box;margin-bottom:16px;padding:10px;border-radius:4px;border:1px solid #777;background:#999}
+.card .forgot{display:block;text-align:right;color:#1f7a3a;margin:-8px 0 16px}
+.card button{width:100%;padding:9px;background:#1f8a3e;border:0;color:#ddd;border-radius:4px;font-size:16px}
+.modal{display:none;position:fixed;inset:0;background:#0006}.modal.show{display:block}
+.modal-dialog{position:absolute;top:34px;left:173px;width:375px;background:#fff;color:#333;border-radius:6px}
+.modal-header,.modal-body,.modal-footer{padding:16px 18px}.modal-header,.modal-body{border-bottom:1px solid #e5e5e5}.modal-footer{text-align:right}
+#toast-container{position:fixed;top:58px;right:0}
+.toast{background:#d9534f;color:#fff;padding:14px 12px;width:345px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="top">Not a Customer? <a href="/contact.html" target="_blank" data-testid="contact-us">Contact Us</a></div>
+<div class="card">
+  <h2>Welcome back</h2>
+  <form id="f" novalidate>
+    <input name="email" placeholder="Email" aria-label="Email" data-testid="email">
+    <input name="password" type="password" placeholder="Password" aria-label="Password" data-testid="password">
+    <a class="forgot" href="/forgot.html" data-testid="forgot">Forgot password?</a>
+    <button type="submit" data-testid="login">Login</button>
+  </form>
+</div>
+<div class="modal fade" id="failure" tabindex="-1">
+  <div class="modal-dialog" role="dialog" aria-labelledby="ft">
+    <div class="modal-header"><span class="modal-title" id="ft">Failure</span></div>
+    <div class="modal-body" id="fmsg"></div>
+    <div class="modal-footer"><button type="button" class="btn" id="fclose">Close</button></div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script>
+const show = (msg) => {
+  document.getElementById('fmsg').textContent = msg;
+  document.getElementById('failure').classList.add('show');
+  const t = document.createElement('div'); t.className = 'toast toast-error'; t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 2500); // the toast disappears by itself
+};
+document.getElementById('fclose').onclick = () => document.getElementById('failure').classList.remove('show');
+document.getElementById('f').onsubmit = (e) => {
+  e.preventDefault();
+  const email = e.target.email.value.trim(), pw = e.target.password.value;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return show('Email is not a valid email address');
+  if (email !== 'demo@portal.test' || pw !== 'Portal#123') return show('Wrong email or password');
+  location.href = '/portal-home.html';
+};
+</script>
+</body>
+</html>

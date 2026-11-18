@@ -1,0 +1,9 @@
+case: Profile opened by address
+module: Profile
+type: positive
+description: Starts at its own address with its own user (not the page's default)
+url: /profile.html?lang=ar
+page: profile
+user: standard
+steps:
+  - text: { element: profile.profileTitle, contains: "ملفي الشخصي" }

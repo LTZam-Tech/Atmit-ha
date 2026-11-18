@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: widgetDetails
+url: /widget-details.html?venue=abc
+description: Found while exploring on 2026-11-04 — reached after "Pick “5:30 PM” in timeSlot"
+readyWhen: detailsTitle
+settings:
+  timeout: 10000
+elements:
+  detailsTitle:
+    testid: details-title
+    fallback:
+      - role: heading
+        name: Guest details
+        exact: true
+      - text: Guest details
+        exact: true
+    control: heading
+  gname:
+    role: textbox
+    name: Name
+    exact: true
+    fallback:
+      - label: Name
+      - id: gname
+    control: textbox
+  confirmBooking:
+    role: button
+    name: Confirm booking
+    exact: true
+    fallback:
+      - text: Confirm booking
+        exact: true
+      - css: button
+    control: button
+  phoneCountry:
+    testid: phone-country
+    fallback:
+      - role: button
+        name: +971 ▾
+        exact: true
+      - id: cc
+    control: button
+  phoneCountrySearch:
+    testid: phone-country-search
+    fallback:
+      - role: textbox
+        name: Search country
+        exact: true
+      - placeholder: Search country
+    control: textbox
+    semantic: phone
+  phoneCountryOptionJo:
+    testid: phone-country-option-JO
+    fallback:
+      - role: option
+        name: Jordan
+        exact: true
+      - text: Jordan
+        exact: true
+    control: option

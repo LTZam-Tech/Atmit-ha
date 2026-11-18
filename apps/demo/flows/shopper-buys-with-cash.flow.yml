@@ -1,0 +1,7 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Shopper buys with cash
+steps:
+  - case: login-to-cart
+  - case: go-to-checkout
+  - case: place-order
+    row: TC-ORD-002

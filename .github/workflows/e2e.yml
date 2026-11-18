@@ -1,0 +1,38 @@
+name: e2e
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      app: { description: 'APP (folder in apps/)', default: 'demo' }
+      env: { description: 'ENV (from app.yml)', default: '' }
+      grep: { description: 'Tag filter, e.g. @smoke', default: '' }
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run validate
+        env: { APP: '${{ inputs.app || 'demo' }}' }
+      - run: npx playwright test --shard=${{ matrix.shard }} ${{ inputs.grep && format('--grep {0}', inputs.grep) || '' }}
+        env:
+          CI: 'true'
+          APP: ${{ inputs.app || 'demo' }}
+          ENV: ${{ inputs.env }}
+          # passwords for real apps come from CI secrets via ${VAR} in app.yml, e.g. password: ${UAT_PASSWORD}
+          # TARGET: grid
+          # GRID_WS_URL: ${{ secrets.GRID_WS_URL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smart-report-${{ strategy.job-index }}
+          path: reports/smart-report

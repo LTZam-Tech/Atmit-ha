@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: portal
+url: /portal.html
+description: Found while exploring on 2026-11-03
+readyWhen: welcomeBack
+settings:
+  timeout: 10000
+elements:
+  contactUs:
+    testid: contact-us
+    fallback:
+      - role: link
+        name: Contact Us
+        exact: true
+      - text: Contact Us
+        exact: true
+    control: link
+    href: /contact.html
+    newTab: true
+  welcomeBack:
+    role: heading
+    name: Welcome back
+    exact: true
+    fallback:
+      - text: Welcome back
+        exact: true
+      - css: h2
+    control: heading
+  email:
+    testid: email
+    fallback:
+      - role: textbox
+        name: Email
+        exact: true
+      - label: Email
+    control: textbox
+    semantic: email
+  password:
+    testid: password
+    fallback:
+      - label: Password
+      - placeholder: Password
+    control: password
+    semantic: password
+  forgot:
+    testid: forgot
+    fallback:
+      - role: link
+        name: Forgot password?
+        exact: true
+      - text: Forgot password?
+        exact: true
+    control: link
+    href: /forgot.html
+  login:
+    testid: login
+    fallback:
+      - role: button
+        name: Login
+        exact: true
+      - text: Login
+        exact: true
+    control: button
+  failureDialog:
+    id: failure
+    fallback:
+      - css: .modal:visible
+    control: dialog
+    messages:
+      - Email is not a valid email address
+  failureDialogClose:
+    css: .modal:visible button:has-text("Close")
+    control: button
+  errorMessage:
+    css: .toast.toast-error:visible
+    control: alert
+    messages:
+      - Email is not a valid email address

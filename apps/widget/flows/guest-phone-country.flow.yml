@@ -1,0 +1,8 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Guest phone country
+module: Booking
+tags:
+  - "@e2e"
+  - "@explored"
+steps:
+  - case: widgetdetails-click-971-type-jo-in-phonecountrysea

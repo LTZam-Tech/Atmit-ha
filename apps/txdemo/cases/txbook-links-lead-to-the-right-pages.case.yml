@@ -1,0 +1,19 @@
+# Edited in the Control Panel Case Builder
+case: TxBook — links lead to the right pages
+type: positive
+module: TxBook
+page: txBook
+tags:
+  - "@navigation"
+  - "@links"
+  - "@generated"
+steps:
+  - click: txBook.home
+  - url:
+      contains: /tx/index.html
+  - visible: txIndex.seeWhatYourOperation
+  - open: txBook
+  - click: txBook.bookADemo
+  - url:
+      contains: /tx/book.html
+  - visible: txBook.bookADemo2

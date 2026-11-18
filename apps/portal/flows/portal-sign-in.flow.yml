@@ -1,0 +1,9 @@
+# Workflow — test cases chained in one session (edit in Control Panel → Test builder → Workflows)
+flow: Portal sign in
+module: Auth
+tags:
+  - "@e2e"
+  - "@explored"
+steps:
+  - case: portal-try-a-wrong-login-find-the-error-message
+  - case: portal-click-forgot-password

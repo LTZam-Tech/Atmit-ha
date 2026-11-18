@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: portalHome
+url: /portal-home.html
+description: Found while exploring on 2026-11-03
+auth: demo
+readyWhen: logout
+settings:
+  timeout: 10000
+elements:
+  myAccount:
+    testid: my-account
+    fallback:
+      - role: link
+        name: My account
+        exact: true
+      - text: My account
+        exact: true
+    control: link
+    href: /portal-account.html
+  logout:
+    testid: logout
+    fallback:
+      - role: link
+        name: Log out
+        exact: true
+      - text: Log out
+        exact: true
+    control: link
+    href: /portal.html
+  homeTitle:
+    testid: home-title
+    fallback:
+      - role: heading
+        name: Portal home
+        exact: true
+      - text: Portal home
+        exact: true
+    control: heading

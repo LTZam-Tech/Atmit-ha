@@ -1,0 +1,164 @@
+# yaml-language-server: $schema=../../../src/core/or/or.schema.json
+page: profile
+url: /profile.html
+description: Profile form — text fields, radio group, dropdown, checkbox group
+auth: standard
+readyWhen: profileTitle
+settings:
+  timeout: 10000
+elements:
+  profileTitle:
+    testid: profile-title
+    fallback:
+      - text: My profile
+        exact: true
+      - css: span
+  logout:
+    testid: logout
+    fallback:
+      - role: button
+        name: Logout
+        exact: true
+      - text: Logout
+        exact: true
+    control: button
+  profileError:
+    testid: profile-error
+    fallback:
+      - css: div.error
+      - xpath: //body/form/div[1]
+    control: alert
+  profileSaved:
+    testid: profile-saved
+    fallback:
+      - text: Profile saved
+        exact: true
+      - css: div.ok
+  fullName:
+    role: textbox
+    name: Full name
+    exact: true
+    fallback:
+      - label: Full name
+      - id: fullName
+    control: textbox
+    semantic: fullName
+    rules:
+      required: true
+      maxlength: 40
+  email:
+    role: textbox
+    name: Email
+    exact: true
+    fallback:
+      - label: Email
+      - id: email
+    control: textbox
+    semantic: email
+    rules:
+      required: true
+      maxlength: 60
+  phone:
+    role: textbox
+    name: Mobile
+    exact: true
+    fallback:
+      - label: Mobile
+      - id: phone
+    control: textbox
+    semantic: phone
+    rules:
+      pattern: "[0-9+ ]{8,15}"
+  age:
+    label: Age
+    fallback:
+      - id: age
+      - css: input[name="age"]
+    control: textbox
+    semantic: age
+    rules:
+      min: 18
+      max: 99
+  gender:
+    css: input[type="radio"][name="gender"]
+    control: radiogroup
+    options:
+      - Male
+      - Female
+  country:
+    role: combobox
+    name: Country
+    exact: true
+    fallback:
+      - label: Country
+      - id: country
+    control: select
+    semantic: country
+    rules:
+      required: true
+    options:
+      - Jordan
+      - Saudi Arabia
+      - United Arab Emirates
+  interests:
+    css: input[type="checkbox"][name="interests"]
+    control: checkgroup
+    options:
+      - Music
+      - Sports
+      - Reading
+  newsletter:
+    role: checkbox
+    name: Send me the newsletter
+    exact: true
+    fallback:
+      - label: Send me the newsletter
+      - id: newsletter
+    control: checkbox
+  bio:
+    role: textbox
+    name: About me
+    exact: true
+    fallback:
+      - label: About me
+      - id: bio
+    control: textarea
+    semantic: description
+    rules:
+      maxlength: 200
+  saveProfile:
+    testid: save-profile
+    fallback:
+      - role: button
+        name: Save
+        exact: true
+      - text: Save
+        exact: true
+    control: button
+  visitDate:
+    label: Visit date
+    fallback:
+      - placeholder: mm/dd/yyyy
+    control: datepicker
+    semantic: date
+    format: MM/dd/yyyy
+    rules:
+      readonly: true
+  visitSummary:
+    testid: visit-summary
+  calendar:
+    testid: calendar
+  endDate:
+    placeholder: End Date
+    fallback:
+      - label: End date
+    control: datepicker
+    semantic: date
+    format: yyyy-MM-dd
+  startDate:
+    placeholder: dd/mm/yyyy
+    control: datepicker
+    semantic: date
+    format: dd/MM/yyyy
+  calendar2:
+    testid: calendar2
