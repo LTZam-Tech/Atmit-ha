@@ -13,7 +13,10 @@ all 0.1.0 capabilities.
 
 - Unit and module tests live in `tests/unit/**/*.test.ts` and run with Node's built-in runner through tsx:
   `npm run test:unit` (`node --import tsx --test`). No new dependency.
-- Playwright stays the runner for browser and end-to-end tests. Its `testMatch` in `playwright.config.ts` does not pick
+- Tests that need a real browser but test Atimtha's own modules (page collection, generators) live in
+  `tests/integration/**/*.test.ts` and run with `npm run test:integration` (same runner, one file at a time). They start
+  the bundled demo app on a free port and drive Chromium through the Playwright library.
+- Playwright Test stays the runner for the no-code cases and end-to-end tests of applications under test. Its `testMatch` in `playwright.config.ts` does not pick
   up `tests/unit`, so the two suites stay separate.
 - The bundled sample projects are regression fixtures: `tests/unit/sample-projects.test.ts` loads, validates and exports
   every project under `apps/`. The same projects will be the fixtures for the YAML-to-database migration.
@@ -21,5 +24,5 @@ all 0.1.0 capabilities.
 ## Consequences
 
 - Fast feedback (the suite runs in seconds) without a browser.
-- CI runs `npm run test:unit` after `npm run validate` in `.github/workflows/e2e.yml`.
+- CI runs `npm run test:unit` and `npm run test:integration` after `npm run validate` in `.github/workflows/e2e.yml`.
 - Frontend component tests need a separate decision once the frontend stack is chosen (see the estimate's open decisions).

@@ -111,7 +111,7 @@ Integrity is enforced by JSON schemas (AJV) and loaders at read time and by `npm
 | Data | Files only; renames rewrite references; no history except Git. |
 | API | Unversioned, unauthenticated, one 57 KB file; errors returned as `400 {error}`. |
 | Tests | Before Phase 0 there were no unit or component tests of Atimtha itself. |
-| Git commit | `gitCommit()` stages with `git add -A`, then blocks known secret file names; anything else untracked is committed. |
+| Git commit | 0.1.0 staged with `git add -A` and blocked only three secret file names (fixed in Phase 0, ADR-0004). |
 | Observability | Console output only; no structured logs, metrics or health endpoint. |
 | Engines | Web only. API testing is limited to a setup helper (`src/utils/api-client.ts`). |
 
@@ -121,4 +121,8 @@ Integrity is enforced by JSON schemas (AJV) and loaders at read time and by `npm
 | --- | --- | --- |
 | Panel request guard and security headers | `panel/security.ts`, `panel/server.ts` | Implemented, Tested (unit) |
 | Unit test harness (`npm run test:unit`, node:test + tsx) | `tests/unit/*`, `package.json` | Implemented, Tested |
-| ADRs | `docs/adr/*` | Written |
+| Panel Git commit: project files only, explicit paths, secret check by name and content | `panel/git-guard.ts`, `panel/server.ts`, `panel/app/settings.js` | Implemented, Tested (unit) |
+| Fix: Git and branding modals were trapped in the 52 px top bar (its `backdrop-filter`), now rendered beside it | `panel/app/main.js` | Implemented, checked in the browser |
+| Browser integration tests: page collection and generators on the demo app (`npm run test:integration`) | `tests/integration/*` | Implemented, Tested |
+| Threat model | `docs/security/threat-model.md` | Written |
+| ADRs 0001–0004 accepted, 0005–0010 proposed | `docs/adr/*` | Written |
