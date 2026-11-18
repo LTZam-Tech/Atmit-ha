@@ -78,6 +78,8 @@ export interface Step {
   index?: number;     // position in the YAML list (for messages)
   as?: string;        // save: variable name → {{var.<as>}}
   pattern?: string;   // save: regex, first group (or whole match) is kept
+  /** API engine steps (engine: api): the step's body, validated by src/core/api-engine/model.ts */
+  api?: Record<string, unknown>;
 }
 
 export interface DataRow {
@@ -96,6 +98,8 @@ export interface CaseDef {
   id: string;
   case: string;
   description?: string;
+  /** web (default) runs browser steps; api runs HTTP steps (src/core/api-engine) */
+  engine?: 'web' | 'api';
   module?: string;
   /** positive = the scenario must succeed, negative = it must be rejected; every row inherits it */
   type?: 'positive' | 'negative';

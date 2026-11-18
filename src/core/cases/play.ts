@@ -11,6 +11,7 @@ import { environment } from '../../../config/environment';
 import { runSteps } from './runner';
 import { render, resolveRow, type TemplateContext } from './template';
 import { outcomeFor, type CaseDef, type DataRow } from './model';
+import { runApiSteps, type ApiResponseState } from '../api-engine/runner';
 
 export interface PlayOptions {
   /** do not open the start page: continue on the page the browser is on now (workflows) */
@@ -19,6 +20,14 @@ export interface PlayOptions {
 
 export async function play(c: CaseDef, row: DataRow, ui: UI, page: Page, faker: Faker, vars: Record<string, string>, byId: Map<string, CaseDef>, opts: PlayOptions = {}) {
   const ctx: TemplateContext = { data: resolveRow(row, faker), faker, vars };
+  if (c.engine === 'api') {
+    // API cases: HTTP requests through the test's own request context (shares cookies with the browser session)
+    const state = { named: {} as Record<string, ApiResponseState>, last: undefined as ApiResponseState | undefined };
+    await runApiSteps(page.request, c.steps, ctx, state);
+    const outcome = outcomeFor(row.type || !c.type ? row : { ...row, type: c.type }, c.outcomes);
+    if (outcome) await runApiSteps(page.request, c.outcomes[outcome], ctx, state);
+    return;
+  }
   if (!opts.continueHere) {
     if (c.continueFrom) {
       const src = byId.get(c.continueFrom.case)!;

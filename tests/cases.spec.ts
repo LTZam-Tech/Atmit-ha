@@ -31,6 +31,33 @@ const suite = suiteName ? readSuites().find((s) => s.name === suiteName) : undef
 if (suiteName && !suite) test(`✖ suite "${suiteName}" not found in suites.yml`, () => { throw new Error(`No suite "${suiteName}" in apps/<app>/suites.yml`); });
 const selected = selectRows(runnable, suite);
 
+// ONLY_CASES=a,b / ONLY_ROWS=TC-001,TC-002 — a run started from the platform for chosen cases or rows
+// (execution agent, ADR-0014). Cases the chosen ones depend on stay, so chains still work.
+const onlyCases = (process.env.ONLY_CASES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+const onlyRows = (process.env.ONLY_ROWS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+if (onlyCases.length) {
+  const keep = new Set<string>();
+  const add = (id: string) => {
+    if (keep.has(id)) return;
+    keep.add(id);
+    const c = byId.get(id);
+    for (const d of [...(c?.dependsOn ?? []), ...(c?.continueFrom ? [c.continueFrom.case] : [])]) add(d);
+  };
+  onlyCases.forEach(add);
+  for (const id of [...selected.keys()]) if (!keep.has(id)) selected.delete(id);
+}
+if (onlyRows.length) {
+  for (const [id, rows] of selected) {
+    if (onlyCases.length && !onlyCases.includes(id)) continue; // dependencies run whole
+    const c = byId.get(id);
+    for (const i of [...rows]) {
+      const rowId = c?.data[i]?.id;
+      if (!rowId || !onlyRows.includes(rowId)) rows.delete(i);
+    }
+    if (!rows.size) selected.delete(id);
+  }
+}
+
 const startOf = (c: CaseDef) => startPageOf(c, byId);
 // two cases (or two rows) with the same name must not stop the whole run: the repeated one gets its file id
 const usedNames = new Set<string>();

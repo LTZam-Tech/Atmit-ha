@@ -8,6 +8,7 @@ import YAML from 'yaml';
 import { casesDir, currentApp, loadApp, orDir } from '../app';
 import { readRepository, paramsOf } from '../or/loader';
 import type { NormalizedPageDef } from '../or/types';
+import { normalizeApiStep } from '../api-engine/model';
 import { caseId, dataFieldsUsed, normalizeStep, outcomeFor, parseElementRef, varsUsed, type CaseDef, type DataRow, type RawStep, type Step } from './model';
 
 export interface CaseIssue { file: string; message: string }
@@ -64,15 +65,22 @@ export function readCases(app = currentApp(), opts: { strict?: boolean } = {}): 
     const errs: string[] = [];
     const raw = raws.get(caseId(file));
     if (!raw) continue;
-    const known = new Set(['case', 'description', 'type', 'user', 'url', 'module', 'dependsOn', 'continueFrom', 'page', 'tags', 'steps', 'outcomes', 'data']);
+    const known = new Set(['case', 'description', 'engine', 'type', 'user', 'url', 'module', 'dependsOn', 'continueFrom', 'page', 'tags', 'steps', 'outcomes', 'data']);
     for (const k of Object.keys(raw)) if (!known.has(k)) errs.push(`unknown key "${k}"`);
     if (typeof raw.case !== 'string' || !raw.case.trim()) errs.push('"case" (the case name) is required');
+    const engine = raw.engine === undefined ? 'web' : String(raw.engine);
+    if (!['web', 'api'].includes(engine)) errs.push('"engine" must be web or api');
+    const isApi = engine === 'api';
+    if (isApi && (raw.page !== undefined || raw.continueFrom !== undefined)) errs.push('an API case sends requests: remove "page" / "continueFrom" (use dependsOn to reuse saved values)');
 
     const norm = (list: unknown, where: string): Step[] => {
       if (list === undefined) return [];
       if (!Array.isArray(list)) { errs.push(`${where} must be a list`); return []; }
       return list.flatMap((s, i) => {
-        try { return [{ ...normalizeStep(s as RawStep, `${where} #${i + 1}`), index: i + 1 }]; } catch (e) { errs.push((e as Error).message); return []; }
+        try {
+          const st = isApi ? normalizeApiStep(s as Record<string, unknown>, `${where} #${i + 1}`) : normalizeStep(s as RawStep, `${where} #${i + 1}`);
+          return [{ ...st, index: i + 1 }];
+        } catch (e) { errs.push((e as Error).message); return []; }
       });
     };
     const steps = norm(raw.steps, 'steps');
@@ -169,7 +177,7 @@ export function readCases(app = currentApp(), opts: { strict?: boolean } = {}): 
       for (const message of errs) issues.push({ file, message });
       if (opts.strict) continue;
     }
-    cases.push({ file, id, case: String(raw.case ?? file), description: raw.description as string | undefined, module: raw.module ? String(raw.module) : undefined, type: caseType as CaseDef['type'], user, url, dependsOn, continueFrom, page: startPage, tags, steps, outcomes, data });
+    cases.push({ file, id, case: String(raw.case ?? file), description: raw.description as string | undefined, engine: isApi ? 'api' : undefined, module: raw.module ? String(raw.module) : undefined, type: caseType as CaseDef['type'], user, url, dependsOn, continueFrom, page: startPage, tags, steps, outcomes, data });
   }
   return { cases, issues };
 }

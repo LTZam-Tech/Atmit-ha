@@ -142,6 +142,25 @@ Cases are validated before the run (unknown element, missing parameter, missing 
 
 ---
 
+## API test cases — `engine: api`
+
+A case with `engine: api` sends HTTP requests instead of driving the browser. Data rows, outcomes, `{{templates}}`,
+`dependsOn` (saved values such as a token flow to the next case), suites, workflows and the Smart Report work the same.
+
+| Step | Example |
+| --- | --- |
+| `request` | `request: { method: POST, url: /api/orders, json: { sku: "{{data.sku}}" }, auth: { bearer: "{{var.token}}" } }` — also `headers`, `query`, `form`, `body`, `timeout`, `as` |
+| `status` | `status: 201` · `status: { in: [400, 422] }` |
+| `header` | `header: { name: location, contains: /api/orders/ }` (`equals`, `contains`, `exists`) |
+| `json` | `json: { path: $.items[*].sku, contains: backpack }` (`equals`, `contains`, `exists`, `type`, `count`) |
+| `body` | `body: { contains: OK }` (`equals`, `contains`, `matches`) |
+| `schema` | `schema: { type: object, required: [id] }` (JSON Schema) |
+| `time` | `time: { below: 1500 }` (milliseconds) |
+| `save` | `save: { path: $.id, as: orderId }` or `save: { header: location, as: url }` → `{{var.orderId}}` |
+
+Relative URLs use the environment's address. Authorization, cookie and token values are masked in the report.
+Examples: `apps/demo/cases/api-login.case.yml` and `api-orders.case.yml` (the demo shop serves a small API under `/api`).
+
 ## Journey recorder (Phase 2)
 
 Control Panel → ② Pages → **🎬 Record a journey** (or `npm run record -- "Create patient" --start /login`).
