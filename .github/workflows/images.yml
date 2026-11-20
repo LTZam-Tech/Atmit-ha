@@ -1,0 +1,70 @@
+name: images
+# Container images of the platform, web app and agent (backlog §12): build, SBOM (CycloneDX, syft) and vulnerability
+# scan (trivy) on every push that touches them. Nothing is pushed to a registry here.
+on:
+  push:
+    paths: ['platform/**', 'db/**', 'web/**', 'agent/**', 'src/**', 'reporters/**', 'tests/**', 'package*.json', '.dockerignore', 'deploy/helm/**', '.github/workflows/images.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chart:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      # helm is on the GitHub-hosted runners; lint and render with every option on
+      - run: helm lint deploy/helm/atimtha
+      - run: >-
+          helm template atimtha deploy/helm/atimtha
+          --set agent.enabled=true --set networkPolicy.enabled=true --set metrics.serviceMonitor.enabled=true
+          --set networkPolicy.metricsFrom[0].podSelector.matchLabels.app=prometheus
+          --set keys.integrationSecret=atimtha-integrations > /dev/null
+
+  image:
+    name: ${{ matrix.name }} image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: platform, context: ., dockerfile: platform/Dockerfile }
+          - { name: web, context: web, dockerfile: web/Dockerfile }
+          - { name: agent, context: ., dockerfile: agent/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          tags: atimtha/${{ matrix.name }}:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+      - name: SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: atimtha/${{ matrix.name }}:ci
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.name }}.cdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.name }}-${{ github.sha }}
+          path: sbom-${{ matrix.name }}.cdx.json
+          retention-days: 90
+      - name: Vulnerability scan (fails on critical findings with a fix)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: atimtha/${{ matrix.name }}:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table

@@ -33,9 +33,16 @@ const userFor = (stepAs: string | undefined, caseId: string, previous: string | 
   return stepAs ?? previous ?? userOf(c, byId) ?? (page ? repo.get(page)?.auth : undefined) ?? 'none';
 };
 
+// ONLY_FLOWS=order-journey,… — a run started from the platform for chosen workflows (file names without .flow.yml)
+const onlyFlows = (process.env.ONLY_FLOWS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+const onlyCasesChosen = (process.env.ONLY_CASES ?? '').trim().length > 0;
+const chosenFlows = onlyFlows.length
+  ? flows.filter((f) => onlyFlows.includes(f.id))
+  : onlyCasesChosen ? [] : flows;   // a run for chosen cases does not also run every workflow
+
 const usedFlowNames = new Set<string>();
 test.describe('Workflows', () => {
-for (const f of flows) {
+for (const f of chosenFlows) {
   let title = f.flow;
   for (let n = 2; usedFlowNames.has(title); n++) title = `${f.flow} [${f.file}${n > 2 ? ` #${n}` : ''}]`;
   usedFlowNames.add(title);

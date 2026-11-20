@@ -32,6 +32,8 @@ import AdmZip from 'adm-zip';
 import { generateProject } from '../src/core/export/codegen';
 import { checkPages } from '../src/core/page-check';
 import { checkRequest, SECURITY_HEADERS } from './security';
+import { parsePorcelainZ, planCommit } from './git-guard';
+import { BODY_LIMITS, HttpError, checkZip, isInside, readLimitedBody, safeArg } from './limits';
 
 const PORT = Number(process.env.PANEL_PORT ?? 4400);
 const PW_CLI = path.join(ROOT, 'node_modules/@playwright/test/cli.js');
@@ -557,7 +559,12 @@ function git(args: string[]) {
 function gitStatus() {
   try { git(['rev-parse', '--is-inside-work-tree']); } catch { return { repo: false }; }
   const branch = (() => { try { return git(['rev-parse', '--abbrev-ref', 'HEAD']); } catch { return '(no commits yet)'; } })();
-  const changes = git(['status', '--porcelain']).split('\n').filter(Boolean).map((l) => ({ status: l.slice(0, 2).trim(), file: l.slice(3) }));
+  const plan = gitPlan();
+  const changes = [
+    ...plan.commit.map((c) => ({ status: c.status.trim(), file: c.file, commit: true })),
+    ...plan.blocked.map((b) => ({ status: b.change.status.trim(), file: b.change.file, commit: false, blocked: true, reason: b.reason })),
+    ...plan.skipped.map((s) => ({ status: s.change.status.trim(), file: s.change.file, commit: false, reason: s.reason })),
+  ];
   const remote = (() => { try { return git(['remote', 'get-url', 'origin']); } catch { return ''; } })();
   return { repo: true, branch, changes, remote };
 }
@@ -566,19 +573,48 @@ function gitInit() {
   git(['init', '-b', 'main']);
   return gitStatus();
 }
+/** passwords and keys from every project's secrets.yml — finding one in a committed file is a leak */
+function knownSecrets(): string[] {
+  const out: string[] = [];
+  const walk = (v: unknown, key = '') => {
+    if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
+    else if (typeof v === 'string' && /pass|secret|token|key/i.test(key) && !/^\$\{\w+\}$/.test(v)) out.push(v);
+  };
+  for (const app of listApps()) {
+    const f = path.join(appDir(app), 'secrets.yml');
+    if (fs.existsSync(f)) { try { walk(YAML.parse(fs.readFileSync(f, 'utf8'))); } catch { /* unreadable secrets file: nothing to compare */ } }
+  }
+  return out;
+}
+const readWorkspaceText = (file: string) => {
+  try { const b = fs.readFileSync(path.join(ROOT, file)); return b.includes(0) ? undefined : b.toString('utf8'); } catch { return undefined; }
+};
+function gitPlan() {
+  const out = execFileSync('git', ['status', '--porcelain=v1', '-z', '-uall'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return planCommit(parsePorcelainZ(out), readWorkspaceText, knownSecrets());
+}
 function gitCommit(message: string) {
   if (!message?.trim()) throw new Error('Write a commit message');
-  git(['add', '-A']);
-  const staged = git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
-  const leaked = staged.filter((f) => /secrets\.ya?ml$|\.env(\.|$)|\.auth\//.test(f));
-  if (leaked.length) { git(['reset', '-q']); throw new Error(`Blocked: secret files would be committed (${leaked.join(', ')}). Check .gitignore.`); }
-  if (!staged.length) throw new Error('Nothing to commit');
-  try { git(['commit', '-m', message]); } catch (e) {
+  const plan = gitPlan();
+  if (plan.blocked.length) throw new Error(`Blocked, nothing committed: ${plan.blocked.map((b) => `${b.change.file} (${b.reason})`).join('; ')}`);
+  if (!plan.commit.length) throw new Error(plan.skipped.length ? 'Nothing to commit in project files (apps/, branding/). The other changes need your Git client.' : 'Nothing to commit');
+  // stage and commit exactly these paths (literal pathspecs, NUL-separated, no command-line length limit)
+  const paths = plan.commit.flatMap((c) => (c.from ? [c.from, c.file] : [c.file]));
+  const list = path.join(os.tmpdir(), `atimtha-commit-${process.pid}-${Date.now()}.txt`);
+  fs.writeFileSync(list, paths.join('\0'));
+  const env = { ...process.env, GIT_LITERAL_PATHSPECS: '1' };
+  const run = (args: string[]) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env }).trim();
+  try {
+    run(['add', `--pathspec-from-file=${list}`, '--pathspec-file-nul']);
+    run(['commit', '-m', message, `--pathspec-from-file=${list}`, '--pathspec-file-nul']);
+  } catch (e) {
     const msg = (e as { stderr?: string }).stderr ?? String(e);
     if (/user\.(name|email)|Please tell me who you are/i.test(msg)) throw new Error('Git does not know who you are yet. Run once: git config --global user.name "Your Name" && git config --global user.email you@company.com');
     throw new Error(msg);
+  } finally {
+    fs.rmSync(list, { force: true });
   }
-  return gitStatus();
+  return { ...gitStatus(), committed: plan.commit.length, left: plan.skipped.length };
 }
 
 function exportProject(app: string): Buffer {
@@ -596,12 +632,17 @@ function exportProject(app: string): Buffer {
 }
 
 function importProject(b64: string, overwrite = false) {
-  const zip = new AdmZip(Buffer.from(b64, 'base64'));
+  if (typeof b64 !== 'string' || !b64) throw new HttpError(400, 'Choose a project zip to import');
+  const buf = Buffer.from(b64, 'base64');
+  let zip: AdmZip;
+  try { zip = new AdmZip(buf); } catch { throw new HttpError(400, 'This file is not a valid zip'); }
   const entries = zip.getEntries();
   const appYml = entries.find((e) => /^[^/]+\/app\.yml$/.test(e.entryName));
   if (!appYml) throw new Error('This zip is not a project export (no <project>/app.yml inside)');
   const key = appYml.entryName.split('/')[0];
   if (!/^[a-z][a-z0-9-]*$/.test(key)) throw new Error(`Invalid project folder "${key}"`);
+  // size, file count, zip bomb and path checks before anything is written (threat model T4)
+  checkZip(buf.length, entries, key);
   if (listApps().includes(key) && !overwrite) throw new Error(`Project "${key}" already exists`);
   for (const e of entries) {
     if (e.isDirectory) continue;
@@ -622,15 +663,12 @@ const json = (res: http.ServerResponse, code: number, data: unknown) => {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
 };
-const readBody = (req: http.IncomingMessage) => new Promise<any>((resolve) => {
-  let b = '';
-  req.on('data', (d) => (b += d));
-  req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { resolve({}); } });
-});
+/** JSON body with a size limit (2 MB; project imports 70 MB) — threat model T5 */
+const readBody = (req: http.IncomingMessage, limit: number = BODY_LIMITS.default) => readLimitedBody(req, limit);
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css', '.webm': 'video/webm', '.zip': 'application/zip', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 function serveStatic(res: http.ServerResponse, base: string, rel: string) {
   const file = path.normalize(path.join(base, rel || 'index.html'));
-  if (!file.startsWith(base) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return json(res, 404, { error: 'not found' });
+  if (!isInside(base, file) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return json(res, 404, { error: 'not found' });
   res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 }
@@ -669,7 +707,7 @@ const server = http.createServer(async (req, res) => {
     // ---------------- journey recorder & navigation
     if (p === '/api/record' && req.method === 'POST') {
       const b = await readBody(req);
-      const args = [TSX_CLI, 'scripts/record.ts', b.name || 'Recorded journey', '--start', b.start || '/'];
+      const args = [TSX_CLI, 'scripts/record.ts', safeArg(b.name || 'Recorded journey', 'Journey name', 200), '--start', safeArg(b.start || '/', 'Start address')];
       if (b.auth && b.auth !== 'none') args.push('--auth', b.auth);
       if (b.locale) args.push('--lang', b.locale);
       startJob('record', `Recording "${b.name || 'journey'}"`, args, envVars(b));
@@ -691,7 +729,7 @@ const server = http.createServer(async (req, res) => {
     // ---------------- projects
     if (req.method === 'GET' && p === '/api/projects') return json(res, 200, projectsList());
     if (req.method === 'POST' && p === '/api/projects') return json(res, 200, { ok: true, ...createBlankProject(await readBody(req)) });
-    if (req.method === 'POST' && p === '/api/projects/import') { const b = await readBody(req); return json(res, 200, { ok: true, ...importProject(b.zip, b.overwrite) }); }
+    if (req.method === 'POST' && p === '/api/projects/import') { const b = await readBody(req, BODY_LIMITS.import); return json(res, 200, { ok: true, ...importProject(b.zip, b.overwrite) }); }
     if ((m = p.match(/^\/api\/projects\/([a-z][a-z0-9-]*)\/export-code$/)) && req.method === 'GET') {
       const app = appOf({ app: m[1] });
       const { files, warnings } = generateProject(app);
@@ -912,7 +950,7 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req);
       if (!/^[a-z][a-zA-Z0-9]*$/.test(b.page ?? '')) throw new Error('Page key must be camelCase, e.g. patientForm');
       startJob('harvest', `Harvest ${b.path} → or/drafts/${b.page}.page.yml`,
-        [TSX_CLI, 'scripts/or-harvester.ts', b.path || '/', b.page, ...(b.auth && b.auth !== 'none' ? ['--auth', b.auth] : []), ...(b.locale === 'ar' ? ['--lang', 'ar'] : [])], envVars(b));
+        [TSX_CLI, 'scripts/or-harvester.ts', safeArg(b.path || '/', 'Page address'), b.page, ...(b.auth && b.auth !== 'none' ? ['--auth', b.auth] : []), ...(b.locale === 'ar' ? ['--lang', 'ar'] : [])], envVars(b));
       return json(res, 200, { ok: true });
     }
     if (p === '/api/drafts/promote' && req.method === 'POST') {
@@ -965,7 +1003,7 @@ const server = http.createServer(async (req, res) => {
 
     json(res, 404, { error: 'not found' });
   } catch (e) {
-    json(res, 400, { error: (e as Error).message });
+    json(res, e instanceof HttpError ? e.status : 400, { error: (e as Error).message });
   }
 });
 

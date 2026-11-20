@@ -1,0 +1,26 @@
+# API test example (engine: api): log in through the demo shop's JSON API and keep the token for later cases.
+case: API - log in
+engine: api
+module: API
+tags: ['@api', '@smoke']
+steps:
+  - request:
+      method: POST
+      url: /api/login
+      json: { username: "{{data.username}}", password: "{{data.password}}" }
+outcomes:
+  success:
+    - status: 200
+    - json: { path: $.token, type: string }
+    - json: { path: $.user, equals: "{{data.username}}" }
+    - save: { path: $.token, as: token }
+  rejected:
+    - status: 401
+    - json: { path: $.error, equals: invalid_credentials }
+  invalid:
+    - status: 422
+    - json: { path: "$.errors[*].field", contains: "{{data.field}}" }
+data:
+  - { id: TC-API-001, title: valid user, type: positive, outcome: success, username: "{{user.standard.username}}", password: "{{user.standard.password}}" }
+  - { id: TC-API-051, title: wrong password, type: negative, outcome: rejected, username: "{{user.standard.username}}", password: "{{faker.internet.password}}" }
+  - { id: TC-API-052, title: missing password, type: negative, outcome: invalid, username: "{{user.standard.username}}", password: "", field: password }

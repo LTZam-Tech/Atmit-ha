@@ -7,7 +7,8 @@ import { test as base, expect, type BrowserContext, type Page } from '@playwrigh
 import { DataFactory } from '../data';
 import { seededFaker } from '../data/faker';
 import { ApiClient } from '../utils/api-client';
-import { environment } from '../../config/environment';
+import { environment, runConfig } from '../../config/environment';
+import { healingVerdict, healsOf, recordHeal } from '../core/healing';
 import { authFile, pageForTags } from '../core/pages-setup';
 import { SmartOR } from '../core/or/resolver';
 import { openPage, waitReady } from '../pages/base.page';
@@ -44,8 +45,13 @@ export class UI {
       try { return await openPage(this.page, target, query); }
       catch (e) {
         // self-healing: the address does not show the page, but the navigation map reaches it → go that way, and say so
-        if (!route || route.start === pageKey) throw e;
-        test.info().annotations.push({ type: 'or-healed', description: `${pageKey}: its address did not show the page — reached it through ${[route.start, ...route.edges.map((x) => x.to)].join(' → ')} instead. Fix it in Pages → 🩺 Check pages.` });
+        if (!route || route.start === pageKey || runConfig.healing === 'off') throw e;
+        const via = [route.start, ...route.edges.map((x) => x.to)].join(' → ');
+        recordHeal({
+          kind: 'navigation-route', target: pageKey, purpose: 'navigation',
+          original: `its address did not show the page: ${(e as Error).message.split('\n')[0]}`,
+          healedBy: `the navigation map (${via})`, fix: 'Fix it in Pages → 🩺 Check pages.',
+        }, `${pageKey}: its address did not show the page — reached it through ${via} instead. Fix it in Pages → 🩺 Check pages.`);
       }
     }
     if (!route) throw new Error(`Page "${pageKey}" opens through navigation, but no route reaches it. Add one in Control Panel → Pages → Map (or record a journey).`);
@@ -62,6 +68,7 @@ interface Fixtures {
   data: DataFactory;
   api: ApiClient;
   runContext: void;
+  healingGate: void;
   lastPage: void;
   discover: Discovery;
 }
@@ -177,8 +184,20 @@ export const test = base.extend<Fixtures>({
   // Auto fixture: stamps run context on every test for the Smart Report
   runContext: [
     async ({}, use, testInfo) => {
-      testInfo.annotations.push({ type: 'context', description: `app=${environment.app}; env=${environment.name}; locale=${environment.locale}` });
+      testInfo.annotations.push({ type: 'context', description: `app=${environment.app}; env=${environment.name}; locale=${environment.locale}; healing=${runConfig.healing}` });
       await use();
+    },
+    { auto: true },
+  ],
+
+  // Auto fixture: healing governance — a test that passed only through self-healing the policy does not accept
+  // fails here, with the original failure(s) in the message (src/core/healing.ts, ADR-0011)
+  healingGate: [
+    async ({}, use, testInfo) => {
+      await use();
+      if (testInfo.status !== 'passed' || testInfo.expectedStatus !== 'passed') return;
+      const verdict = healingVerdict(healsOf(testInfo.annotations), runConfig.healing);
+      if (verdict) throw new Error(verdict);
     },
     { auto: true },
   ],

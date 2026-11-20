@@ -35,6 +35,10 @@ export interface AppConfig {
   languages: ('en' | 'ar')[];
   defaultEnv?: string;
   branding?: string;
+  /** mobile engine: the Appium server and the app/device capabilities (src/core/mobile-engine) */
+  mobile?: { appiumUrl?: string; capabilities: Record<string, unknown>; waitTimeoutMs?: number };
+  /** API engine: named requests that steps reuse with `request: { use: name, …overrides }` */
+  api?: { requests?: Record<string, Record<string, unknown>> };
   environments: Record<string, AppEnvironment>;
   login?: {
     page: string;
@@ -44,7 +48,8 @@ export interface AppConfig {
   users: Record<string, AppUser>;
   messages: Record<string, Record<string, string>>;
   /** parallel browsers, timeouts (seconds) and retries for runs */
-  run?: { workers?: number; retries?: number; testTimeout?: number; waitTimeout?: number };
+  /** healing: self-healing policy pass | flag | off (src/core/healing.ts) */
+  run?: { workers?: number; retries?: number; testTimeout?: number; waitTimeout?: number; healing?: 'pass' | 'flag' | 'off' };
 }
 
 const validate = new Ajv({ allErrors: true, allowUnionTypes: true }).compile<any>(
@@ -107,6 +112,8 @@ export function loadApp(app = currentApp()): AppConfig {
     languages: raw.languages ?? ['en'],
     defaultEnv: raw.defaultEnv,
     branding: raw.branding,
+    mobile: raw.mobile,
+    api: raw.api,
     environments,
     login: raw.login,
     run: raw.run,

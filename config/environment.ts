@@ -8,10 +8,12 @@
  *   BASE_URL=<url>     override the environment URL for a one-off run
  */
 import { currentApp, loadApp } from '../src/core/app';
+import { healingPolicy } from '../src/core/healing';
 
 const APP = currentApp();
 const app = loadApp(APP);
-const ENV = process.env.ENV ?? app.defaultEnv ?? Object.keys(app.environments)[0];
+// an empty ENV (CI passes the optional workflow input through as "") means "use the project default"
+const ENV = process.env.ENV || app.defaultEnv || Object.keys(app.environments)[0];
 const env = app.environments[ENV];
 if (!env) {
   throw new Error(`[config] Environment "${ENV}" not defined for app "${APP}". Available: ${Object.keys(app.environments).join(', ')} — run with ENV=<one of them>, or remove ENV to use the project default`);
@@ -52,4 +54,6 @@ export const runConfig = {
   retries: num(process.env.RETRIES) ?? app.run?.retries ?? (isCIRun ? 1 : 0),
   testTimeout: (num(process.env.TEST_TIMEOUT) ?? app.run?.testTimeout ?? 60) * 1000,
   waitTimeout: (num(process.env.WAIT_TIMEOUT) ?? app.run?.waitTimeout ?? 10) * 1000,
+  /** self-healing policy: pass | flag | off (HEALING env var wins) — see src/core/healing.ts */
+  healing: healingPolicy(app.run?.healing),
 };

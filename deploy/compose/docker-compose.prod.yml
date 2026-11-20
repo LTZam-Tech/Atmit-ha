@@ -1,0 +1,94 @@
+# Atimtha platform — PRODUCTION package (ADR-0008): one host, Docker Compose, works without internet access.
+#   cp .env.prod.example .env.prod      # fill in every value (see the comments there)
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# Then open the web app on ATIMTHA_HTTP_PORT behind the organisation's TLS reverse proxy.
+# Development login is OFF; the API refuses to start with an unsafe configuration (Hardening.CheckProductionConfiguration).
+name: atimtha
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atimtha
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      ATIMTHA_OWNER_PASSWORD: ${ATIMTHA_OWNER_PASSWORD:?set ATIMTHA_OWNER_PASSWORD}
+      ATIMTHA_APP_PASSWORD: ${ATIMTHA_APP_PASSWORD:?set ATIMTHA_APP_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d atimtha"]
+      interval: 5s
+      retries: 30
+    # no published port: only the platform reaches the database
+
+  migrate:
+    image: ${ATIMTHA_REGISTRY:-atimtha}/platform:${ATIMTHA_VERSION:-1.0.0}
+    build: { context: ../.., dockerfile: platform/Dockerfile }
+    command: ["migrate"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Migrations: Host=postgres;Database=atimtha;Username=atimtha_owner;Password=${ATIMTHA_OWNER_PASSWORD}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    image: ${ATIMTHA_REGISTRY:-atimtha}/platform:${ATIMTHA_VERSION:-1.0.0}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Platform: Host=postgres;Database=atimtha;Username=atimtha_app;Password=${ATIMTHA_APP_PASSWORD}
+      # scheduler, notifications, retention and lost-job recovery work across organisations (owner role)
+      ConnectionStrings__Maintenance: Host=postgres;Database=atimtha;Username=atimtha_owner;Password=${ATIMTHA_OWNER_PASSWORD}
+      Auth__Authority: ${ATIMTHA_OIDC_ISSUER:?set ATIMTHA_OIDC_ISSUER}
+      Auth__Audience: ${ATIMTHA_OIDC_AUDIENCE:-atimtha-api}
+      Jobs__SigningKey: ${ATIMTHA_JOB_SIGNING_KEY:?set ATIMTHA_JOB_SIGNING_KEY}
+      Jobs__TokenKey: ${ATIMTHA_JOB_TOKEN_KEY:?set ATIMTHA_JOB_TOKEN_KEY}
+      Evidence__EncryptionKey: ${ATIMTHA_EVIDENCE_KEY:?set ATIMTHA_EVIDENCE_KEY}
+      Platform__PublicUrl: ${ATIMTHA_PUBLIC_URL:?set ATIMTHA_PUBLIC_URL}
+      # emails of the people who may create, rename and archive organisations (comma-separated)
+      Platform__Admins: ${ATIMTHA_PLATFORM_ADMINS:-}
+      # /metrics (Prometheus text) answers with this bearer token only (empty = only from the container itself)
+      Metrics__Token: ${ATIMTHA_METRICS_TOKEN:-}
+      # secrets that integrations reference as vault:env/NAME are passed through here, e.g.:
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT:-}
+      TESTRAIL_API_KEY: ${TESTRAIL_API_KEY:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    volumes:
+      - evidence:/var/lib/atimtha/evidence
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    image: ${ATIMTHA_REGISTRY:-atimtha}/web:${ATIMTHA_VERSION:-1.0.0}
+    build: { context: ../../web }
+    restart: unless-stopped
+    environment:
+      ATIMTHA_OIDC_ISSUER: ${ATIMTHA_OIDC_ISSUER}
+      ATIMTHA_OIDC_CLIENT_ID: ${ATIMTHA_OIDC_CLIENT_ID:-atimtha-web}
+      ATIMTHA_API_UPSTREAM: http://api:8080
+    ports: ["${ATIMTHA_HTTP_BIND:-127.0.0.1}:${ATIMTHA_HTTP_PORT:-8080}:8080"]
+    depends_on: [api]
+
+  # optional: an execution agent on the same host (more agents run wherever the tested applications are)
+  #   docker compose -f docker-compose.prod.yml --env-file .env.prod --profile agent up -d
+  agent:
+    profiles: [agent]
+    image: ${ATIMTHA_REGISTRY:-atimtha}/agent:${ATIMTHA_VERSION:-1.0.0}
+    build: { context: ../.., dockerfile: agent/Dockerfile }
+    restart: unless-stopped
+    environment:
+      ATIMTHA_PLATFORM_URL: http://web:8080
+      ATIMTHA_AGENT_TOKEN: ${ATIMTHA_AGENT_TOKEN:-}
+      ATIMTHA_JOB_KEY: ${ATIMTHA_JOB_PUBLIC_KEY:-}
+      # jobs this agent runs at the same time (1 to 8)
+      ATIMTHA_AGENT_SLOTS: ${ATIMTHA_AGENT_SLOTS:-1}
+    shm_size: 1gb
+    depends_on: [web]
+
+volumes:
+  pgdata:
+  evidence:

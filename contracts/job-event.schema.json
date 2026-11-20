@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atimtha.iltizamtech/contracts/job-event/1",
+  "title": "Atimtha job events v1 (ADR-0014): what an agent reports back",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": { "type": { "const": "job.started" }, "agentVersion": { "type": "string" } }
+    },
+    {
+      "type": "object",
+      "required": ["type", "title", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "test.finished" },
+        "title": { "type": "string", "maxLength": 1000 },
+        "module": { "type": "string" },
+        "kind": { "enum": ["positive", "negative", "other"] },
+        "caseKey": { "type": "string" },
+        "rowKey": { "type": "string" },
+        "status": { "enum": ["passed", "failed", "timed_out", "skipped", "interrupted"] },
+        "flaky": { "type": "boolean" },
+        "retries": { "type": "integer", "minimum": 0 },
+        "category": { "enum": ["application_defect", "locator_or", "self_healing", "environment", "timeout", "script_error", "infrastructure"] },
+        "error": { "type": "string", "maxLength": 20000 },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "steps": { "type": "array" },
+        "lastPage": { "type": "object" },
+        "discoveries": { "type": "object" },
+        "healing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "target", "purpose", "original", "healedBy"],
+            "properties": {
+              "kind": { "enum": ["fallback-locator", "ready-element", "navigation-route"] },
+              "target": { "type": "string" },
+              "purpose": { "enum": ["check", "action", "navigation"] },
+              "original": { "type": "string" },
+              "healedBy": { "type": "string" },
+              "fix": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "job.finished" },
+        "status": { "enum": ["passed", "failed", "error", "cancelled"] },
+        "counts": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "error": { "type": "string", "maxLength": 20000 }
+      }
+    }
+  ]
+}

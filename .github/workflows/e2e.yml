@@ -22,8 +22,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run validate
-        env: { APP: '${{ inputs.app || 'demo' }}' }
+        env: { APP: "${{ inputs.app || 'demo' }}" }
+      # Atimtha's own tests: once per run, not once per shard
       - run: npm run test:unit
+        if: matrix.shard == '1/2'
+      - run: npm run test:integration
+        if: matrix.shard == '1/2'
       - run: npx playwright test --shard=${{ matrix.shard }} ${{ inputs.grep && format('--grep {0}', inputs.grep) || '' }}
         env:
           CI: 'true'

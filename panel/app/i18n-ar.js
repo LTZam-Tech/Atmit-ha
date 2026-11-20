@@ -85,6 +85,8 @@ export const AR = {
   'Automation Smart Report': 'التقرير الذكي للأتمتة', 'Branding saved — applies to the next run': 'انحفظت الهوية — بتنطبق على التشغيل الجاي', 'Client': 'العميل', 'Commit': 'Commit',
   'Commit message': 'رسالة الـ commit', 'Committed': 'تم الـ commit', 'Company': 'الشركة', 'Confidential': 'سري', 'Confidentiality label': 'تصنيف السرية', 'Delete profile': 'احذف الملف',
   'Footer text': 'نص التذييل', 'Initialise Git repository': 'أنشئ مستودع Git', 'Logo (PNG/SVG/JPG, under 500 KB)': 'الشعار (PNG/SVG/JPG، أقل من 500 KB)', 'Logo must be under 500 KB': 'لازم الشعار يكون أقل من 500 KB',
+  'Will be committed': 'رح ينعمله commit', 'Blocked': 'ممنوع', 'Use your Git client': 'استخدم برنامج Git تبعك',
+  'The panel commits project files only (apps/, branding/). Files with passwords or keys are blocked. Code and settings changes, push / pull and branches: use your Git client.': 'لوحة التحكم بتعمل commit لملفات المشاريع بس (apps/ و branding/). الملفات اللي فيها كلمات سر أو مفاتيح بتنمنع. تعديلات الكود والإعدادات، والـ push / pull والـ branches: استخدم برنامج Git تبعك.',
   'Main color': 'اللون الرئيسي', 'Nothing to commit.': 'ما في شي للـ commit.', 'Prepared by the QA team': 'من إعداد فريق الجودة', 'Preview': 'معاينة', 'Profile name': 'اسم الملف', 'Remove': 'إزالة',
   'Report title': 'عنوان التقرير', 'Save branding': 'احفظ الهوية', 'Upload': 'رفع', 'Profile': 'ملف',
   'One profile per client or delivery. Each project picks its profile in Settings → Project. Shown on every Smart Report.': 'ملف لكل عميل أو مشروع تسليم. كل مشروع بيختار ملفه من إعدادات المشروع. بيظهر على كل تقرير ذكي.',
@@ -244,6 +246,8 @@ export const AR = {
 // Text with numbers or names inside. Each: [regex, replacement string or function]
 const n = (x) => x;
 export const AR_PATTERNS = [
+  [/^Committed (\d+) file\(s\) ✔$/, (_, a) => `تم الـ commit لـ ${a} ملف ✔`],
+  [/^Committed (\d+) file\(s\); (\d+) left for your Git client$/, (_, a, b) => `تم الـ commit لـ ${a} ملف؛ ${b} ملف ضلّوا لبرنامج Git تبعك`],
   [/^(\d+) page\(s\)$/, (_, a) => `${n(a)} صفحة`],
   [/^(\d+) environment\(s\)$/, (_, a) => `${a} بيئة`],
   [/^(\d+) draft\(s\) to review$/, (_, a) => `${a} مسودة للمراجعة`],

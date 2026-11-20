@@ -78,6 +78,10 @@ export interface Step {
   index?: number;     // position in the YAML list (for messages)
   as?: string;        // save: variable name → {{var.<as>}}
   pattern?: string;   // save: regex, first group (or whole match) is kept
+  /** API engine steps (engine: api): the step's body, validated by src/core/api-engine/model.ts */
+  api?: Record<string, unknown>;
+  /** mobile engine steps (engine: mobile): the step's body, validated by src/core/mobile-engine/model.ts */
+  mobile?: Record<string, unknown>;
 }
 
 export interface DataRow {
@@ -96,6 +100,11 @@ export interface CaseDef {
   id: string;
   case: string;
   description?: string;
+  /** web (default) runs browser steps; api HTTP steps; mobile an app through Appium; performance load through k6 */
+  engine?: 'web' | 'api' | 'mobile' | 'performance';
+  /** performance cases: how much load, and the limits it must stay within (src/core/performance-engine) */
+  load?: import('../performance-engine/model').LoadProfile;
+  thresholds?: import('../performance-engine/model').Thresholds;
   module?: string;
   /** positive = the scenario must succeed, negative = it must be rejected; every row inherits it */
   type?: 'positive' | 'negative';

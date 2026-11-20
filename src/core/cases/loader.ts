@@ -8,6 +8,9 @@ import YAML from 'yaml';
 import { casesDir, currentApp, loadApp, orDir } from '../app';
 import { readRepository, paramsOf } from '../or/loader';
 import type { NormalizedPageDef } from '../or/types';
+import { normalizeApiStep } from '../api-engine/model';
+import { normalizeMobileStep } from '../mobile-engine/model';
+import { normalizeLoad, normalizePerfStep, normalizeThresholds } from '../performance-engine/model';
 import { caseId, dataFieldsUsed, normalizeStep, outcomeFor, parseElementRef, varsUsed, type CaseDef, type DataRow, type RawStep, type Step } from './model';
 
 export interface CaseIssue { file: string; message: string }
@@ -64,15 +67,34 @@ export function readCases(app = currentApp(), opts: { strict?: boolean } = {}): 
     const errs: string[] = [];
     const raw = raws.get(caseId(file));
     if (!raw) continue;
-    const known = new Set(['case', 'description', 'type', 'user', 'url', 'module', 'dependsOn', 'continueFrom', 'page', 'tags', 'steps', 'outcomes', 'data']);
+    const known = new Set(['case', 'description', 'engine', 'type', 'user', 'url', 'module', 'dependsOn', 'continueFrom', 'page', 'tags', 'steps', 'outcomes', 'data', 'load', 'thresholds']);
     for (const k of Object.keys(raw)) if (!known.has(k)) errs.push(`unknown key "${k}"`);
     if (typeof raw.case !== 'string' || !raw.case.trim()) errs.push('"case" (the case name) is required');
+    const engine = raw.engine === undefined ? 'web' : String(raw.engine);
+    if (!['web', 'api', 'mobile', 'performance'].includes(engine)) errs.push('"engine" must be web, api, mobile or performance');
+    const isApi = engine === 'api';
+    const isMobile = engine === 'mobile';
+    const isPerf = engine === 'performance';
+    if ((isApi || isMobile || isPerf) && (raw.page !== undefined || raw.continueFrom !== undefined)) errs.push(`a${isApi ? 'n API' : isMobile ? ' mobile' : ' performance'} case has no web start page: remove "page" / "continueFrom" (use dependsOn to reuse saved values)`);
+    let load: CaseDef['load'];
+    let thresholds: CaseDef['thresholds'];
+    if (isPerf) {
+      try { load = normalizeLoad(raw.load, 'load'); } catch (e) { errs.push((e as Error).message); }
+      try { thresholds = normalizeThresholds(raw.thresholds, 'thresholds'); } catch (e) { errs.push((e as Error).message); }
+    } else if (raw.load !== undefined || raw.thresholds !== undefined) errs.push('"load" and "thresholds" belong to performance cases (engine: performance)');
 
     const norm = (list: unknown, where: string): Step[] => {
       if (list === undefined) return [];
       if (!Array.isArray(list)) { errs.push(`${where} must be a list`); return []; }
       return list.flatMap((s, i) => {
-        try { return [{ ...normalizeStep(s as RawStep, `${where} #${i + 1}`), index: i + 1 }]; } catch (e) { errs.push((e as Error).message); return []; }
+        try {
+          const at = `${where} #${i + 1}`;
+          const st = isApi ? normalizeApiStep(s as Record<string, unknown>, at)
+            : isMobile ? normalizeMobileStep(s as Record<string, unknown>, at)
+            : isPerf ? normalizePerfStep(s as Record<string, unknown>, at)
+            : normalizeStep(s as RawStep, at);
+          return [{ ...st, index: i + 1 }];
+        } catch (e) { errs.push((e as Error).message); return []; }
       });
     };
     const steps = norm(raw.steps, 'steps');
@@ -169,7 +191,7 @@ export function readCases(app = currentApp(), opts: { strict?: boolean } = {}): 
       for (const message of errs) issues.push({ file, message });
       if (opts.strict) continue;
     }
-    cases.push({ file, id, case: String(raw.case ?? file), description: raw.description as string | undefined, module: raw.module ? String(raw.module) : undefined, type: caseType as CaseDef['type'], user, url, dependsOn, continueFrom, page: startPage, tags, steps, outcomes, data });
+    cases.push({ file, id, case: String(raw.case ?? file), description: raw.description as string | undefined, engine: engine === 'web' ? undefined : (engine as CaseDef['engine']), load, thresholds, module: raw.module ? String(raw.module) : undefined, type: caseType as CaseDef['type'], user, url, dependsOn, continueFrom, page: startPage, tags, steps, outcomes, data });
   }
   return { cases, issues };
 }

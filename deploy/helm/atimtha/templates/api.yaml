@@ -1,0 +1,92 @@
+{{- $name := include "atimtha.name" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-api
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "api") | nindent 6 }}
+  strategy:
+    # a ReadWriteOnce evidence volume can be mounted by one pod at a time
+    type: {{ if eq .Values.evidence.accessMode "ReadWriteOnce" }}Recreate{{ else }}RollingUpdate{{ end }}
+  template:
+    metadata:
+      labels:
+        {{- include "atimtha.labels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      {{- include "atimtha.pod" . | nindent 6 }}
+      containers:
+        - name: api
+          image: {{ include "atimtha.image" (dict "root" . "name" "platform") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            {{- include "atimtha.dbEnv" . | nindent 12 }}
+            - { name: ASPNETCORE_ENVIRONMENT, value: Production }
+            - name: ConnectionStrings__Platform
+              value: {{ printf "%s;Username=atimtha_app;Password=$(ATIMTHA_DB_APP_PASSWORD)" (include "atimtha.db" .) | quote }}
+            # scheduler, notifications, retention and lost-job recovery work across organisations (owner role)
+            - name: ConnectionStrings__Maintenance
+              value: {{ printf "%s;Username=atimtha_owner;Password=$(ATIMTHA_DB_OWNER_PASSWORD)" (include "atimtha.db" .) | quote }}
+            - { name: Auth__Authority, value: {{ required "oidc.issuer is required" .Values.oidc.issuer | quote }} }
+            - { name: Auth__Audience, value: {{ .Values.oidc.audience | quote }} }
+            - { name: Platform__PublicUrl, value: {{ required "publicUrl is required" .Values.publicUrl | quote }} }
+            - { name: Platform__Admins, value: {{ .Values.platformAdmins | quote }} }
+            - name: Jobs__SigningKey
+              valueFrom: { secretKeyRef: { name: {{ .Values.keys.existingSecret }}, key: job-signing-key } }
+            - name: Jobs__TokenKey
+              valueFrom: { secretKeyRef: { name: {{ .Values.keys.existingSecret }}, key: job-token-key } }
+            - name: Evidence__EncryptionKey
+              valueFrom: { secretKeyRef: { name: {{ .Values.keys.existingSecret }}, key: evidence-key } }
+            - name: Metrics__Token
+              valueFrom: { secretKeyRef: { name: {{ .Values.keys.existingSecret }}, key: metrics-token, optional: true } }
+            {{- with .Values.api.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.keys.integrationSecret }}
+          # secrets integrations reference as vault:env/NAME
+          envFrom:
+            - secretRef: { name: {{ . }} }
+          {{- end }}
+          volumeMounts:
+            - { name: evidence, mountPath: /var/lib/atimtha/evidence }
+            # ASP.NET data protection keys (per pod)
+            - { name: aspnet, mountPath: /home/app/.aspnet }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+      volumes:
+        - name: evidence
+          persistentVolumeClaim:
+            claimName: {{ .Values.evidence.existingClaim | default (printf "%s-evidence" $name) }}
+        - name: aspnet
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-api
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    {{- include "atimtha.selector" (dict "root" . "component" "api") | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }

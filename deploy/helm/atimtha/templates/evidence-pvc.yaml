@@ -1,0 +1,20 @@
+{{- if not .Values.evidence.existingClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "atimtha.name" . }}-evidence
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+  annotations:
+    # evidence outlives an uninstall: delete the claim yourself when the data may go
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - {{ .Values.evidence.accessMode }}
+  {{- with .Values.evidence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.evidence.size }}
+{{- end }}

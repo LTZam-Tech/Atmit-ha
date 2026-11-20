@@ -1,0 +1,48 @@
+# Atimtha web app: the Angular build, and /api, /api/agent, /api/ci passed to the platform.
+# Rendered at start by the nginx image (envsubst): ${ATIMTHA_API_UPSTREAM}, ${ATIMTHA_CONNECT_SRC}.
+# TLS is terminated in front of this container (the client's reverse proxy or load balancer).
+
+server {
+    listen 8080;
+    server_name _;
+    server_tokens off;
+    root /usr/share/nginx/html;
+
+    client_max_body_size 110m;   # evidence and Smart Report uploads from agents (the API enforces the real limits)
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    location /api/ {
+        proxy_pass ${ATIMTHA_API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_request_buffering off;
+    }
+
+    location /health/ {
+        proxy_pass ${ATIMTHA_API_UPSTREAM};
+    }
+
+    # hashed bundles never change: cache them for a year; index.html and config.js never
+    location ~* \.(?:js|css|woff2?|webp|png|svg)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+        try_files $uri =404;
+    }
+    location = /config.js {
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+        try_files $uri =404;
+    }
+
+    # the single-page app: every other path is the app's own route
+    location / {
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/conf.d/security-headers.inc;
+        try_files $uri $uri/ /index.html;
+    }
+}

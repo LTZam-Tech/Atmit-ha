@@ -142,6 +142,25 @@ Cases are validated before the run (unknown element, missing parameter, missing 
 
 ---
 
+## API test cases — `engine: api`
+
+A case with `engine: api` sends HTTP requests instead of driving the browser. Data rows, outcomes, `{{templates}}`,
+`dependsOn` (saved values such as a token flow to the next case), suites, workflows and the Smart Report work the same.
+
+| Step | Example |
+| --- | --- |
+| `request` | `request: { method: POST, url: /api/orders, json: { sku: "{{data.sku}}" }, auth: { bearer: "{{var.token}}" } }` — also `headers`, `query`, `form`, `body`, `timeout`, `as` |
+| `status` | `status: 201` · `status: { in: [400, 422] }` |
+| `header` | `header: { name: location, contains: /api/orders/ }` (`equals`, `contains`, `exists`) |
+| `json` | `json: { path: $.items[*].sku, contains: backpack }` (`equals`, `contains`, `exists`, `type`, `count`) |
+| `body` | `body: { contains: OK }` (`equals`, `contains`, `matches`) |
+| `schema` | `schema: { type: object, required: [id] }` (JSON Schema) |
+| `time` | `time: { below: 1500 }` (milliseconds) |
+| `save` | `save: { path: $.id, as: orderId }` or `save: { header: location, as: url }` → `{{var.orderId}}` |
+
+Relative URLs use the environment's address. Authorization, cookie and token values are masked in the report.
+Examples: `apps/demo/cases/api-login.case.yml` and `api-orders.case.yml` (the demo shop serves a small API under `/api`).
+
 ## Journey recorder (Phase 2)
 
 Control Panel → ② Pages → **🎬 Record a journey** (or `npm run record -- "Create patient" --start /login`).
@@ -267,6 +286,13 @@ Many sites change the address at once and swap the content a moment later (page 
 - **The address does not show the page.** If the navigation map reaches the page, the test goes there through the map instead.
 
 Each heal is noted in the report. **Runs → What the run found → Self-healing during the run** offers the matching fix in one click: **Use "…" as ready element**, or **Open it through navigation**.
+
+**Healing policy** (`app.yml` → `run: { healing: pass | flag | off }`, or `HEALING=flag npm test` for one run):
+- `pass` (default): heals let actions and navigation go on, but a **check** (visible, text, value…, or a saved value) that only passes because a backup locator found a substitute element **fails** — it could be hiding a real defect.
+- `flag`: the test still runs to the end, then fails if it needed any healing. Use it for release gates.
+- `off`: no healing; the original failure stops the test.
+
+Every heal keeps the **original failure** (for example "primary locator matched no element") in the report. Run summaries count `healed` tests separately from `flaky` ones (passed after a retry). See ADR-0011.
 
 **Pages → 🩺 Check pages** opens every page by its address, with the session it starts with, and reports what it finds:
 - *Ready.*

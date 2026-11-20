@@ -1,0 +1,36 @@
+# API test example (engine: api) — runs against the demo shop's JSON API (demo-app/server.js).
+case: API - place an order
+engine: api
+module: API
+tags: ['@api']
+dependsOn: [api-login]
+steps:
+  - request:
+      method: POST
+      url: /api/orders
+      json: { sku: "{{data.sku}}", qty: "{{data.qty}}" }
+      auth: { bearer: "{{var.token}}" }
+outcomes:
+  success:
+    - status: 201
+    - header: { name: location, contains: /api/orders/ }
+    - json: { path: $.status, equals: NEW }
+    - json: { path: $.sku, equals: "{{data.sku}}" }
+    - schema:
+        type: object
+        required: [id, sku, qty, total, status]
+        properties:
+          id: { type: string, pattern: "^ORD-" }
+          total: { type: number }
+    - time: { below: 2000 }
+    - save: { path: $.id, as: orderId }
+  error:
+    - status: 422
+    - json: { path: "$.errors[0].field", equals: "{{data.field}}" }
+data:
+  - { id: TC-API-101, title: valid order, type: positive, outcome: success, sku: backpack, qty: 2 }
+  - { id: TC-API-102, title: one item (lower boundary), type: positive, outcome: success, sku: bike-light, qty: 1 }
+  - { id: TC-API-103, title: ten items (upper boundary), type: positive, outcome: success, sku: bike-light, qty: 10 }
+  - { id: TC-API-151, title: unknown product, type: negative, outcome: error, sku: no-such-sku, qty: 1, field: sku }
+  - { id: TC-API-152, title: zero items, type: negative, outcome: error, sku: backpack, qty: 0, field: qty }
+  - { id: TC-API-153, title: eleven items, type: negative, outcome: error, sku: backpack, qty: 11, field: qty }

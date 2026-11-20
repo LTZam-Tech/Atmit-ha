@@ -1,0 +1,8 @@
+# shell scripts run inside Linux containers: always LF
+*.sh   text eol=lf
+*.envsh   text eol=lf
+*.template text eol=lf
+*.sql  text eol=lf
+# binaries
+*.docx binary
+*.png  binary

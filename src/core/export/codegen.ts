@@ -253,7 +253,9 @@ export function generateProject(appKey: string): { files: Files; warnings: strin
   files.set('pages/App.ts', appFile(pages));
 
   // ---------- data + specs (folders per module, dependency chains in one serial spec, suites as tags)
-  const valid = cases.filter((x) => !issues.some((i) => i.file === x.file));
+  // API cases (engine: api) are not exported yet: the standalone project covers web cases
+  for (const c of cases.filter((x) => x.engine === 'api')) warnings.push(`${c.file}: API cases are not exported yet — run them in Atimtha`);
+  const valid = cases.filter((x) => !issues.some((i) => i.file === x.file) && x.engine !== 'api');
   const byId = new Map(valid.map((c) => [c.id, c]));
   const usable = valid.filter((c) => [...c.dependsOn, ...(c.continueFrom ? [c.continueFrom.case] : [])].every((d) => byId.has(d)));
   const suites = readSuites(appKey);

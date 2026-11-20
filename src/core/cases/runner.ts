@@ -24,7 +24,9 @@ async function runStep(ui: UI, page: Page, s: Step, ctx: TemplateContext): Promi
   const shown = (v?: string) => (isSecret(s.element) ? mask(v ?? '') : `"${v === '' ? '(empty)' : v}"`);
   const label = s.name ?? defaultTitle(s, ref ? `${ref.page}.${ref.element}` : '', shown(value), expected);
 
-  const el = () => ui.or(ref!.page).el(ref!.element, params);
+  // checks — and saved values, which later steps rely on — must not pass on a substitute element (healing governance)
+  const purpose = spec.kind === 'Verify' || s.action === 'save' ? 'check' : 'action';
+  const el = () => ui.or(ref!.page).el(ref!.element, params, { purpose });
   const strict = () => ui.or(ref!.page).locator(ref!.element, params); // negative checks & counts — no fallback
 
   const body = async () => {

@@ -1,0 +1,14 @@
+Atimtha {{ .Chart.AppVersion }} is installed as "{{ .Release.Name }}".
+
+Before the first install, create the Secrets the chart reads (nothing secret is stored in values):
+  kubectl create secret generic {{ .Values.database.existingSecret }} --from-literal=owner-password=... --from-literal=app-password=...
+  kubectl create secret generic {{ .Values.keys.existingSecret }} --from-file=job-signing-key=job-signing-key.pem \
+    --from-literal=job-token-key=<openssl rand -base64 32> --from-literal=evidence-key=<openssl rand -base64 32> \
+    --from-literal=metrics-token=<openssl rand -hex 24>
+{{- if .Values.agent.enabled }}
+  kubectl create secret generic {{ .Values.agent.existingSecret }} --from-literal=agent-token=atk_...
+{{- end }}
+Keep a copy of evidence-key: without it, stored screenshots, videos and reports cannot be read.
+
+Open {{ .Values.publicUrl }}{{ if .Values.ingress.enabled }} (ingress host {{ .Values.ingress.host }}){{ end }}.
+Prometheus: GET http://{{ include "atimtha.name" . }}-api:8080/metrics with the header "Authorization: Bearer <metrics-token>".

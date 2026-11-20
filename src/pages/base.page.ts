@@ -6,12 +6,13 @@
  *   import type { ORRegistry } from '../or/or.types.gen';
  *   class LoginPage extends BasePage<ORRegistry, 'login'> { ... }
  */
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { SmartOR } from '../core/or/resolver';
 import { step } from '../utils/steps';
 import { withBaseQuery } from '../utils/url';
+import { recordHeal } from '../core/healing';
 import { waitForSpinners } from '../utils/settle';
-import { environment } from '../../config/environment';
+import { environment, runConfig } from '../../config/environment';
 
 type Args<T> = T extends undefined ? [] : [params: T];
 
@@ -66,11 +67,17 @@ export async function waitReady(or: SmartOR): Promise<void> {
     await expect(await or.el(ready), hint).toBeVisible();
     return;
   } catch (e) { first = e as Error; }
+  // healing policy "off": the original failure stands
+  if (runConfig.healing === 'off') throw new Error(`${hint}\n${first.message}`);
   // self-healing: the page is recognised by its other elements (headings and fields first) → go on, and say so
   const seen = await recognise(or, ready);
   if (seen.length) {
     const msg = `${or.def.page}: "ready when" element "${ready}" was not on the page — recognised it by ${seen.join(', ')}. Fix it in Pages → 🩺 Check pages.`;
-    try { test.info().annotations.push({ type: 'or-healed', description: msg }); } catch { /* outside a test */ }
+    recordHeal({
+      kind: 'ready-element', target: or.def.page, purpose: 'navigation',
+      original: `"ready when" element "${ready}" was not visible: ${first.message.split('\n')[0]}`,
+      healedBy: `recognising the page by ${seen.join(', ')}`, fix: 'Fix it in Pages → 🩺 Check pages.',
+    }, msg);
     return;
   }
   throw new Error(`${hint}\n${first.message}`);
