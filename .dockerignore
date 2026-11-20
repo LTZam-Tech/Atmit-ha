@@ -1,0 +1,18 @@
+# Build context of platform/Dockerfile and agent/Dockerfile (repository root).
+# Never send passwords, local state or other builds into an image.
+**/secrets.yml
+**/.env
+**/.atimtha-base.json
+.auth
+.git
+node_modules
+web
+reports
+test-results
+playwright-report
+apps/*/
+!apps/demo/
+platform/**/bin
+platform/**/obj
+deploy/compose/.env
+dist

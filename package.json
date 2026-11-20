@@ -9,6 +9,8 @@
     "panel": "tsx panel/server.ts",
     "agent": "tsx agent/agent.ts",
     "snapshot": "tsx scripts/snapshot.ts",
+    "drafts": "tsx scripts/drafts.ts",
+    "ci:run": "tsx scripts/ci-run.ts",
     "page:open": "tsx scripts/open-page.ts",
     "page:capture": "tsx scripts/capture-page.ts",
     "record": "tsx scripts/record.ts",

@@ -31,6 +31,15 @@ const suite = suiteName ? readSuites().find((s) => s.name === suiteName) : undef
 if (suiteName && !suite) test(`✖ suite "${suiteName}" not found in suites.yml`, () => { throw new Error(`No suite "${suiteName}" in apps/<app>/suites.yml`); });
 const selected = selectRows(runnable, suite);
 
+// ENGINE=mobile | performance runs only those cases; any other run (web, api, local) leaves them out: they need a
+// device or k6, which only agents with that engine have
+const runEngine = process.env.ENGINE;
+for (const id of [...selected.keys()]) {
+  const e = byId.get(id)?.engine ?? 'web';
+  const special = e === 'mobile' || e === 'performance';
+  if (runEngine === 'mobile' || runEngine === 'performance' ? e !== runEngine : special) selected.delete(id);
+}
+
 // ONLY_CASES=a,b / ONLY_ROWS=TC-001,TC-002 — a run started from the platform for chosen cases or rows
 // (execution agent, ADR-0014). Cases the chosen ones depend on stay, so chains still work.
 const onlyCases = (process.env.ONLY_CASES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -46,6 +55,8 @@ if (onlyCases.length) {
   onlyCases.forEach(add);
   for (const id of [...selected.keys()]) if (!keep.has(id)) selected.delete(id);
 }
+// a run for chosen workflows only (ONLY_FLOWS without ONLY_CASES) runs no single cases
+if ((process.env.ONLY_FLOWS ?? '').trim() && !onlyCases.length) selected.clear();
 if (onlyRows.length) {
   for (const [id, rows] of selected) {
     if (onlyCases.length && !onlyCases.includes(id)) continue; // dependencies run whole

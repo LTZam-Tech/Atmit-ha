@@ -1,0 +1,41 @@
+{{- if .Values.migrate.enabled }}
+{{- $name := include "atimtha.name" . -}}
+# db/migrations, applied with the owner role before the API starts (install) or changes (upgrade)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-migrate
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "atimtha.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- include "atimtha.pod" . | nindent 6 }}
+      containers:
+        - name: migrate
+          image: {{ include "atimtha.image" (dict "root" . "name" "platform") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["migrate"]
+          env:
+            {{- include "atimtha.dbEnv" . | nindent 12 }}
+            - { name: ASPNETCORE_ENVIRONMENT, value: Production }
+            - name: ConnectionStrings__Migrations
+              value: {{ printf "%s;Username=atimtha_owner;Password=$(ATIMTHA_DB_OWNER_PASSWORD)" (include "atimtha.db" .) | quote }}
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+{{- end }}

@@ -34,6 +34,29 @@
       "type": "string",
       "description": "Report branding profile key (branding/profiles.yml)"
     },
+    "mobile": {
+      "type": "object",
+      "description": "Mobile engine: Appium server (or APPIUM_URL on the agent) and the W3C capabilities of the app and device",
+      "additionalProperties": false,
+      "required": ["capabilities"],
+      "properties": {
+        "appiumUrl": { "type": "string" },
+        "capabilities": { "type": "object" },
+        "waitTimeoutMs": { "type": "integer", "minimum": 1000 }
+      }
+    },
+    "api": {
+      "type": "object",
+      "description": "API engine: named requests that steps reuse with request: { use: <name>, ...overrides }",
+      "additionalProperties": false,
+      "properties": {
+        "requests": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$" },
+          "additionalProperties": { "type": "object", "required": ["url"] }
+        }
+      }
+    },
     "environments": {
       "type": "object",
       "minProperties": 1,

@@ -21,6 +21,10 @@ export interface ProjectSnapshot {
   contract: typeof SNAPSHOT_CONTRACT;
   /** the project key (0.1.0 folder name) */
   key: string;
+  /** platform exports only: version of each page / case / workflow — the base of offline drafts (ADR-0007) */
+  versions?: { pages?: Record<string, number>; cases?: Record<string, number>; flows?: Record<string, number> };
+  /** the project's report branding profile (platform only; the logo is a data URI) */
+  branding?: Record<string, unknown> | null;
   /** app.yml as written, without passwords */
   app: Raw;
   /** messages.yml: locale → key → text */

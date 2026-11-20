@@ -1,0 +1,68 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $name := include "atimtha.name" . -}}
+# the API answers only the web container (which also forwards the agents), and Prometheus when it is allowed
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}-api
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "api") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "atimtha.selector" (dict "root" . "component" "web") | nindent 14 }}
+      ports:
+        - { port: 8080 }
+    {{- with .Values.networkPolicy.metricsFrom }}
+    # Prometheus scraping /metrics
+    - from:
+        {{- toYaml . | nindent 8 }}
+      ports:
+        - { port: 8080 }
+    {{- end }}
+---
+# the web container answers the ingress controller and the in-cluster agents
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}-web
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "web") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        {{- with .Values.networkPolicy.ingressFrom }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        - podSelector:
+            matchLabels:
+              {{- include "atimtha.selector" (dict "root" . "component" "agent") | nindent 14 }}
+      ports:
+        - { port: 8080 }
+{{- if .Values.agent.enabled }}
+---
+# agents only call out: nothing connects to them
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $name }}-agent
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "agent") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress: []
+{{- end }}
+{{- end }}

@@ -1,0 +1,148 @@
+/*
+ * Atimtha design tokens (backlog §2) — IltizamTech identity from the InspectZ Figma file:
+ *   colours: variable collection "LTzam" (light) and colour styles color/background|surface|text|border (dark)
+ *   font: Tajawal (Regular, Bold), as used by the InspectZ screens
+ * Components use only these variables and logical CSS properties (margin-inline-start, inset-inline-end…),
+ * so Arabic right-to-left works without separate styles.
+ */
+:root {
+  --at-font: "Tajawal", "Segoe UI", system-ui, sans-serif;
+  --at-font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* LTzam palette */
+  --ltz-primary: #0e2a2a;
+  --ltz-primary-2: #2f4b4b;
+  --ltz-secondary: #349c9c;
+  --ltz-tertiary: #55c6c6;
+  --ltz-neutral: #ffffff;
+  --ltz-gray: #b1b1b1;
+  --ltz-background: #f9f9f9;
+  --ltz-stroke: rgb(14 42 42 / 10%);   /* Stroke = Primary at 10% */
+  --ltz-red: #fb3748;
+  --ltz-red-2: #d00416;
+  --ltz-red-op: rgb(251 55 72 / 10%);
+  --ltz-yellow: #ffdb43;
+  --ltz-yellow-2: #dfb400;
+  --ltz-yellow-op: rgb(255 219 67 / 10%);
+  --ltz-green: #1fc16b;
+  --ltz-green-op: rgb(31 193 107 / 10%);
+  --ltz-saudi-flag: #009966;
+
+  /* roles used by the components */
+  --at-color-primary: var(--ltz-primary);
+  --at-color-primary-ink: var(--ltz-neutral);
+  --at-color-accent: var(--ltz-secondary);
+  --at-color-bg: var(--ltz-background);
+  --at-color-surface: var(--ltz-neutral);
+  --at-color-border: var(--ltz-stroke);
+  --at-color-text: var(--ltz-primary);
+  --at-color-muted: var(--ltz-primary-2);
+  --at-color-ok: var(--ltz-green);
+  --at-color-warn: var(--ltz-yellow-2);
+  --at-color-bad: var(--ltz-red-2);
+  --at-color-ok-bg: var(--ltz-green-op);
+  --at-color-warn-bg: var(--ltz-yellow-op);
+  --at-color-bad-bg: var(--ltz-red-op);
+
+  --at-space-1: 4px;
+  --at-space-2: 8px;
+  --at-space-3: 12px;
+  --at-space-4: 16px;
+  --at-space-6: 24px;
+  --at-space-8: 32px;
+  --at-radius: 10px;
+  --at-radius-sm: 6px;
+  --at-shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 10%);
+  --at-sidebar: 248px;
+  --at-focus: 0 0 0 3px color-mix(in srgb, var(--at-color-primary) 35%, transparent);
+}
+
+/* dark theme: InspectZ colour styles color/background, surface, text, border, primary */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --at-color-primary: #2e9989;          /* color/primary */
+    --at-color-accent: var(--ltz-tertiary);
+    --at-color-bg: #051f1f;               /* color/background/default */
+    --at-color-surface: #042929;          /* color/surface/card */
+    --at-color-border: #102c2b;           /* color/border/default */
+    --at-color-text: #e2e2e2;             /* color/text/default */
+    --at-color-muted: var(--ltz-gray);
+    --at-color-bad: var(--ltz-red);
+    --at-color-warn: var(--ltz-yellow);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--at-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--at-color-text);
+  background: var(--at-color-bg);
+}
+a { color: var(--at-color-primary); }
+h1 { font-size: 22px; margin: 0 0 var(--at-space-4); }
+h2 { font-size: 16px; margin: 0 0 var(--at-space-3); }
+code, .mono { font-family: var(--at-font-mono); font-size: 12.5px; }
+:focus-visible { outline: none; box-shadow: var(--at-focus); border-radius: var(--at-radius-sm); }
+
+/* ---------------------------------------------------------------- building blocks */
+.at-card {
+  background: var(--at-color-surface);
+  border: 1px solid var(--at-color-border);
+  border-radius: var(--at-radius);
+  box-shadow: var(--at-shadow);
+  padding: var(--at-space-4);
+}
+.at-row { display: flex; gap: var(--at-space-3); align-items: center; flex-wrap: wrap; }
+.at-grow { flex: 1; }
+.at-muted { color: var(--at-color-muted); }
+.at-stack > * + * { margin-block-start: var(--at-space-4); }
+
+.at-btn {
+  display: inline-flex; align-items: center; gap: var(--at-space-2);
+  padding: 7px 14px; border-radius: var(--at-radius-sm);
+  border: 1px solid var(--at-color-border); background: var(--at-color-surface); color: var(--at-color-text);
+  font: inherit; cursor: pointer;
+}
+.at-btn:hover { border-color: var(--at-color-primary); }
+.at-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.at-btn.primary { background: var(--at-color-primary); border-color: var(--at-color-primary); color: var(--at-color-primary-ink); }
+.at-btn.danger { color: var(--at-color-bad); border-color: color-mix(in srgb, var(--at-color-bad) 40%, transparent); }
+
+.at-field { display: grid; gap: var(--at-space-1); }
+.at-field label { font-weight: 600; font-size: 13px; }
+.at-input, .at-select {
+  font: inherit; padding: 7px 10px; border-radius: var(--at-radius-sm);
+  border: 1px solid var(--at-color-border); background: var(--at-color-surface); color: var(--at-color-text);
+  min-inline-size: 220px;
+}
+.at-error { color: var(--at-color-bad); font-size: 12.5px; }
+
+.at-table { inline-size: 100%; border-collapse: collapse; }
+.at-table th, .at-table td { text-align: start; padding: 8px 10px; border-block-end: 1px solid var(--at-color-border); vertical-align: top; }
+.at-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--at-color-muted); }
+/* narrow screens: a wide table scrolls sideways instead of breaking the page */
+@media (max-width: 860px) {
+  .at-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .at-table th, .at-table td { white-space: nowrap; }
+}
+.at-table tr:hover td { background: color-mix(in srgb, var(--at-color-primary) 4%, transparent); }
+
+.at-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--at-color-border); }
+.at-badge.ok { background: var(--at-color-ok-bg); color: var(--at-color-ok); }
+.at-badge.warn { background: var(--at-color-warn-bg); color: var(--at-color-warn); }
+.at-badge.bad { background: var(--at-color-bad-bg); color: var(--at-color-bad); }
+
+.at-tabs { display: flex; gap: var(--at-space-1); border-block-end: 1px solid var(--at-color-border); margin-block-end: var(--at-space-4); }
+.at-tabs a { padding: 8px 14px; text-decoration: none; color: var(--at-color-muted); border-block-end: 2px solid transparent; }
+.at-tabs a.active { color: var(--at-color-text); border-color: var(--at-color-primary); font-weight: 600; }
+
+.at-empty { padding: var(--at-space-8); text-align: center; color: var(--at-color-muted); }
+.at-alert { padding: var(--at-space-3); border-radius: var(--at-radius-sm); background: var(--at-color-bad-bg); color: var(--at-color-bad); }
+.at-alert.info { background: var(--at-color-warn-bg); color: var(--at-color-warn); }
+pre.at-pre { white-space: pre-wrap; word-break: break-word; background: var(--at-color-bg); padding: var(--at-space-3); border-radius: var(--at-radius-sm); max-block-size: 320px; overflow: auto; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

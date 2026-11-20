@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atimtha.Api.Workspaces;
 
+using Api = Atimtha.Api.Infrastructure.Api;
+
 public sealed record EnvironmentDto(string Key, string BaseUrl, bool IsDefault, bool StartDemoApp, bool IgnoreHttpsErrors, string? HttpUsername, bool HasHttpPassword)
 {
     public static EnvironmentDto From(ProjectEnvironment e) =>
@@ -101,6 +103,11 @@ public static class EnvironmentEndpoints
         if (env is null) return Api.NotFound("The environment");
         if (env.IsDefault && await db.Environments.AnyAsync(e => e.ProjectId == projectId && e.Key != key, ct))
             return Api.Conflict("This is the default environment: make another one the default first.");
+        // runs and schedules keep pointing at their environment (history and reports)
+        if (await db.Executions.AnyAsync(e => e.EnvironmentId == env.Id, ct))
+            return Api.Conflict("Runs were made on this environment; it stays so their results keep their context.");
+        if (await db.Schedules.AnyAsync(s => s.EnvironmentId == env.Id, ct))
+            return Api.Conflict("A schedule runs on this environment: change or delete the schedule first.");
         db.Environments.Remove(env);
         audit.Add("environment.delete", "environment", env.Id, new { project = project.Key, env.Key });
         await db.SaveChangesAsync(ct);

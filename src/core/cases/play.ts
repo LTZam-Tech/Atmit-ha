@@ -12,6 +12,8 @@ import { runSteps } from './runner';
 import { render, resolveRow, type TemplateContext } from './template';
 import { outcomeFor, type CaseDef, type DataRow } from './model';
 import { runApiSteps, type ApiResponseState } from '../api-engine/runner';
+import { MobileSession, runMobileSteps } from '../mobile-engine/runner';
+import { runLoad } from '../performance-engine/k6';
 
 export interface PlayOptions {
   /** do not open the start page: continue on the page the browser is on now (workflows) */
@@ -20,6 +22,26 @@ export interface PlayOptions {
 
 export async function play(c: CaseDef, row: DataRow, ui: UI, page: Page, faker: Faker, vars: Record<string, string>, byId: Map<string, CaseDef>, opts: PlayOptions = {}) {
   const ctx: TemplateContext = { data: resolveRow(row, faker), faker, vars };
+  if (c.engine === 'mobile') {
+    // mobile cases: one Appium session per test; the device screen is attached when a step fails
+    const m = await MobileSession.open();
+    try {
+      await runMobileSteps(m, c.steps, ctx);
+      const outcome = outcomeFor(row.type || !c.type ? row : { ...row, type: c.type }, c.outcomes);
+      if (outcome) await runMobileSteps(m, c.outcomes[outcome], ctx);
+    } catch (e) {
+      await m.attachScreenshot('screen at failure');
+      throw e;
+    } finally {
+      await m.close();
+    }
+    return;
+  }
+  if (c.engine === 'performance') {
+    // performance cases: the steps of one virtual user, run under load by k6; thresholds decide the result
+    await runLoad(c.steps, ctx, c.load!, c.thresholds ?? {});
+    return;
+  }
   if (c.engine === 'api') {
     // API cases: HTTP requests through the test's own request context (shares cookies with the browser session)
     const state = { named: {} as Record<string, ApiResponseState>, last: undefined as ApiResponseState | undefined };

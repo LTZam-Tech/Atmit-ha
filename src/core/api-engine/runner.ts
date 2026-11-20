@@ -11,6 +11,8 @@ import { environment } from '../../../config/environment';
 import { render, type TemplateContext } from '../cases/template';
 import type { Step } from '../cases/model';
 import { evaluate, typeOf } from './jsonpath';
+import { resolveRequest } from './model';
+import { loadApp } from '../app';
 
 export interface ApiResponseState {
   status: number;
@@ -22,6 +24,48 @@ export interface ApiResponseState {
 
 const SECRET_HEADER = /authorization|cookie|token|secret|api[-_]?key|password/i;
 const ajv = new Ajv({ allErrors: true, strict: false });
+
+/** app.yml api.requests, read once per worker */
+let namedRequests: Record<string, unknown> | undefined | null = null;
+export function appRequests(): Record<string, unknown> | undefined {
+  if (namedRequests === null) {
+    try { namedRequests = loadApp().api?.requests; } catch { namedRequests = undefined; }
+  }
+  return namedRequests;
+}
+
+/** OAuth2 client-credentials tokens, reused within this run until shortly before they expire */
+const tokens = new Map<string, { token: string; until: number }>();
+
+async function clientCredentialsToken(request: APIRequestContext, o: { tokenUrl: string; clientId: string; clientSecret: string; scope?: string }): Promise<string> {
+  const key = `${o.tokenUrl}|${o.clientId}|${o.scope ?? ''}`;
+  const hit = tokens.get(key);
+  if (hit && hit.until > Date.now()) return hit.token;
+  const url = withBaseQuery(o.tokenUrl, environment.baseURL);
+  const res = await request.post(url, {
+    form: { grant_type: 'client_credentials', client_id: o.clientId, client_secret: o.clientSecret, ...(o.scope ? { scope: o.scope } : {}) },
+    failOnStatusCode: false,
+  });
+  const text = await res.text();
+  let body: { access_token?: string; expires_in?: number } = {};
+  try { body = JSON.parse(text); } catch { /* reported below */ }
+  if (!res.ok() || !body.access_token) throw new Error(`OAuth2 token request to ${url} failed: HTTP ${res.status()} ${text.slice(0, 300)}`);
+  // renew 30 s early; a token without expires_in is kept for 5 minutes
+  const seconds = Number(body.expires_in) > 0 ? Number(body.expires_in) : 300;
+  tokens.set(key, { token: body.access_token, until: Date.now() + Math.max(0, seconds - 30) * 1000 });
+  return body.access_token;
+}
+
+type MultipartValue = string | number | boolean | { name: string; mimeType: string; buffer: Buffer };
+function multipartOf(m: Record<string, unknown>): Record<string, MultipartValue> {
+  return Object.fromEntries(Object.entries(m).map(([k, v]) => {
+    if (v && typeof v === 'object') {
+      const f = v as { name: string; mimeType?: string; content?: string; base64?: string };
+      return [k, { name: f.name, mimeType: f.mimeType ?? 'application/octet-stream', buffer: f.base64 !== undefined ? Buffer.from(f.base64, 'base64') : Buffer.from(String(f.content ?? ''), 'utf8') }];
+    }
+    return [k, v as string | number | boolean];
+  }));
+}
 
 /** render every string inside a value ({{data.x}}, {{var.x}}, {{faker…}}, {{user…}}) */
 export function renderDeep(value: unknown, ctx: TemplateContext): unknown {
@@ -51,23 +95,36 @@ async function runApiStep(request: APIRequestContext, s: Step, ctx: TemplateCont
 
   switch (s.action as string) {
     case 'request': {
-      const b = renderDeep(spec, ctx) as Record<string, unknown>;
+      // a named request (app.yml api.requests) with this step's overrides, then {{templates}}
+      const b = renderDeep(resolveRequest(spec, appRequests(), s.name ?? `step ${s.index ?? ''}`.trim()), ctx) as Record<string, unknown>;
       const method = String(b.method ?? 'GET').toUpperCase();
       const url = withBaseQuery(String(b.url), environment.baseURL);
       const headers: Record<string, string> = Object.fromEntries(Object.entries((b.headers ?? {}) as Record<string, unknown>).map(([k, v]) => [k, String(v)]));
-      const auth = b.auth as { bearer?: string; basic?: { username: string; password: string } } | undefined;
+      const params: Record<string, string | number | boolean> = { ...((b.query ?? {}) as Record<string, string | number | boolean>) };
+      const secretHeaders = new Set<string>();
+      const auth = b.auth as {
+        bearer?: string; basic?: { username: string; password: string };
+        apiKey?: { in: 'header' | 'query'; name: string; value: unknown };
+        oauth2?: { tokenUrl: string; clientId: string; clientSecret: string; scope?: string };
+      } | undefined;
       if (auth?.bearer) headers.Authorization = `Bearer ${auth.bearer}`;
       if (auth?.basic) headers.Authorization = `Basic ${Buffer.from(`${auth.basic.username}:${auth.basic.password}`).toString('base64')}`;
-      const shownHeaders = Object.entries(headers).map(([k, v]) => `${k}: ${SECRET_HEADER.test(k) ? mask(v) : v}`).join('; ');
+      if (auth?.apiKey) {
+        if (auth.apiKey.in === 'header') { headers[auth.apiKey.name] = String(auth.apiKey.value); secretHeaders.add(auth.apiKey.name); }
+        else params[auth.apiKey.name] = String(auth.apiKey.value);
+      }
+      if (auth?.oauth2) headers.Authorization = `Bearer ${await clientCredentialsToken(request, auth.oauth2)}`;
+      const shownHeaders = Object.entries(headers).map(([k, v]) => `${k}: ${SECRET_HEADER.test(k) || secretHeaders.has(k) ? mask(v) : v}`).join('; ');
       const title = s.name ?? `${method} ${url}${shownHeaders ? ` · ${shownHeaders}` : ''}`;
       await step.api(title, async () => {
         const started = performance.now();
         const res: APIResponse = await request.fetch(url, {
           method,
           headers,
-          params: b.query as Record<string, string | number | boolean> | undefined,
+          params: Object.keys(params).length ? params : undefined,
           data: b.json !== undefined ? b.json : b.body !== undefined ? String(b.body) : undefined,
           form: b.form as Record<string, string | number | boolean> | undefined,
+          multipart: b.multipart ? multipartOf(b.multipart as Record<string, unknown>) : undefined,
           failOnStatusCode: false,
           timeout: typeof b.timeout === 'number' ? b.timeout : undefined,
         });

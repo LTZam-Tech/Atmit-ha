@@ -1,0 +1,116 @@
+# Atimtha on Kubernetes — mirrors deploy/compose/docker-compose.prod.yml.
+# Secrets are never written here: the chart reads them from Kubernetes Secrets you create first (see NOTES.txt).
+
+image:
+  registry: atimtha            # e.g. registry.client.local/atimtha (images from scripts/offline-bundle.sh, pushed there)
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []           # [{ name: regcred }]
+
+# the address people open (TLS ends at the ingress); used in links in reports, notifications and issues
+publicUrl: https://atimtha.example.org
+# emails of the people who may create, rename and archive organisations (comma separated)
+platformAdmins: ""
+
+# external PostgreSQL 16 with the roles of deploy/postgres/init-roles.sh: atimtha_owner (BYPASSRLS, migrations and
+# maintenance) and atimtha_app (the API, row-level security)
+database:
+  host: postgres.example.internal
+  port: 5432
+  name: atimtha
+  sslMode: Require             # Disable | Prefer | Require | VerifyFull
+  existingSecret: atimtha-db   # keys: owner-password, app-password
+
+oidc:
+  issuer: https://idp.example.org/realms/atimtha   # https only
+  audience: atimtha-api
+  webClientId: atimtha-web
+  scope: "openid profile email"
+
+keys:
+  # keys: job-signing-key (ECDSA P-256 PEM), job-token-key (32 bytes base64), evidence-key (32 bytes base64),
+  #       metrics-token (optional: Prometheus bearer token for /metrics)
+  existingSecret: atimtha-keys
+  # optional: a Secret whose keys become environment variables of the API, for integrations that reference
+  # vault:env/NAME (JIRA_TOKEN, AZURE_DEVOPS_PAT, TESTRAIL_API_KEY, SLACK_WEBHOOK_URL …)
+  integrationSecret: ""
+
+evidence:
+  # screenshots, videos, traces, reports and logos (encrypted at rest with evidence-key)
+  size: 50Gi
+  storageClassName: ""         # "" = the cluster default
+  accessMode: ReadWriteOnce    # ReadWriteMany when api.replicas > 1
+  existingClaim: ""
+
+api:
+  # the scheduler, notifications and lost-job recovery are safe on several replicas (database claims), but the
+  # evidence volume must then be ReadWriteMany
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 384Mi }
+    limits: { memory: 1Gi }
+  extraEnv: []                 # [{ name: Evidence__RetentionDays, value: "30" }]
+
+web:
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 256Mi }
+
+migrate:
+  # runs db/migrations before every install and upgrade (Helm hook)
+  enabled: true
+  backoffLimit: 2
+
+ingress:
+  enabled: true
+  className: ""                # e.g. nginx
+  host: atimtha.example.org
+  annotations: {}              # e.g. { nginx.ingress.kubernetes.io/proxy-body-size: "110m" } (reports up to 100 MB)
+  tls:
+    enabled: true
+    secretName: atimtha-tls
+
+# optional: execution agents inside the cluster (more agents run wherever the tested applications are)
+agent:
+  enabled: false
+  replicas: 1
+  slots: 1                     # jobs per agent at the same time (1 to 8)
+  engines: "web,api"
+  # Secret with key agent-token (atk_…, shown once when the agent is registered in the platform)
+  existingSecret: atimtha-agent
+  # the platform's public signing key (PEM) pinned on the agent; empty = read it from the platform
+  jobPublicKey: ""
+  resources:
+    requests: { cpu: "1", memory: 2Gi }
+    limits: { memory: 4Gi }
+  shmSize: 1Gi
+  runAsUser: 1001              # pwuser in mcr.microsoft.com/playwright:*-noble
+
+# NetworkPolicies: the API answers only the web pods (and Prometheus); the web pods answer the ingress controller and
+# the agents; agents accept nothing. Needs a CNI that enforces NetworkPolicy.
+networkPolicy:
+  enabled: false
+  # who may reach the web pods (the ingress controller); the agents are always allowed
+  ingressFrom:
+    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-nginx } }
+  # who may scrape /metrics on the API, e.g. [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: monitoring } } }]
+  metricsFrom: []
+
+metrics:
+  # Prometheus Operator ServiceMonitor for the API's /metrics (bearer token: metrics-token in keys.existingSecret)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}                 # e.g. { release: kube-prometheus-stack }
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: { type: RuntimeDefault }
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities: { drop: [ALL] }
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

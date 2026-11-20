@@ -1,0 +1,25 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+# Prometheus Operator: scrape the API's /metrics with the metrics-token from the keys Secret
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "atimtha.name" . }}-api
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    {{- with .Values.metrics.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "api") | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ .Values.keys.existingSecret }}
+          key: metrics-token
+{{- end }}

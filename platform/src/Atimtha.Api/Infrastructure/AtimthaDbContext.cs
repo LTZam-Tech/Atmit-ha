@@ -1,5 +1,6 @@
 using System.Text;
 using Atimtha.Api.Execution;
+using Atimtha.Api.Integrations;
 using Atimtha.Api.TestAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -24,6 +25,8 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
         n.MapEnum<CaseType>("case_type", Schema);
         n.MapEnum<WorkflowStart>("workflow_start", Schema);
         n.MapEnum<AssetType>("asset_type", Schema);
+        n.MapEnum<ChangeStatus>("change_status", Schema);
+        n.MapEnum<ChangeSource>("change_source", Schema);
         n.MapEnum<AgentKind>("agent_kind", Schema);
         n.MapEnum<AgentStatus>("agent_status", Schema);
         n.MapEnum<ExecutionStatus>("execution_status", Schema);
@@ -32,6 +35,10 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
         n.MapEnum<FailureCategory>("failure_category", Schema);
         n.MapEnum<HealKind>("heal_kind", Schema);
         n.MapEnum<HealPurpose>("heal_purpose", Schema);
+        n.MapEnum<EvidenceKind>("evidence_kind", Schema);
+        n.MapEnum<IntegrationKind>("integration_kind", Schema);
+        n.MapEnum<NotificationKind>("notification_kind", Schema);
+        n.MapEnum<DeliveryStatus>("delivery_status", Schema);
     }
 
     // identity and tenancy
@@ -62,11 +69,25 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
     public DbSet<RunSuite> Suites => Set<RunSuite>();
     public DbSet<RunSuiteCase> SuiteCases => Set<RunSuiteCase>();
     public DbSet<AssetVersion> AssetVersions => Set<AssetVersion>();
+    public DbSet<ChangeSet> ChangeSets => Set<ChangeSet>();
+    public DbSet<ChangeSetItem> ChangeSetItems => Set<ChangeSetItem>();
     // execution
     public DbSet<ExecutionAgent> Agents => Set<ExecutionAgent>();
     public DbSet<ExecutionRun> Executions => Set<ExecutionRun>();
     public DbSet<TestResult> Results => Set<TestResult>();
     public DbSet<HealingEvent> HealingEvents => Set<HealingEvent>();
+    public DbSet<Evidence> Evidence => Set<Evidence>();
+    public DbSet<ExecutionArtifact> Artifacts => Set<ExecutionArtifact>();
+    public DbSet<Identity.OrganizationSetting> OrganizationSettings => Set<Identity.OrganizationSetting>();
+    public DbSet<RunSchedule> Schedules => Set<RunSchedule>();
+    // integrations
+    public DbSet<Integration> Integrations => Set<Integration>();
+    public DbSet<IntegrationIssue> IntegrationIssues => Set<IntegrationIssue>();
+    public DbSet<FeatureFlag> FeatureFlags => Set<FeatureFlag>();
+    public DbSet<NotificationChannel> NotificationChannels => Set<NotificationChannel>();
+    public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+    public DbSet<CiToken> CiTokens => Set<CiToken>();
+    public DbSet<Workspaces.BrandingProfile> BrandingProfiles => Set<Workspaces.BrandingProfile>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -85,6 +106,8 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
         {
             e.ToTable("membership");
             e.HasOne(m => m.Role).WithMany().HasForeignKey(m => m.RoleId);
+            // an invitation adds the account and its membership in one save: the account must be inserted first
+            e.HasOne<UserAccount>().WithMany().HasForeignKey(m => m.UserId);
         });
         b.Entity<AuditLogEntry>(e =>
         {
@@ -109,7 +132,12 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
         b.Entity<LocatorFallback>(e => { e.ToTable("locator_fallback"); Json(e.Property(x => x.Strategy)); });
         b.Entity<NavigationEdge>(e => { e.ToTable("navigation_edge"); Json(e.Property(x => x.Steps)); });
         b.Entity<LoginConfig>(e => { e.ToTable("login_config"); e.HasKey(x => x.ProjectId); });
-        b.Entity<TestCase>().ToTable("test_case");
+        b.Entity<TestCase>(e =>
+        {
+            e.ToTable("test_case");
+            // the entity keeps the 0.1.0 text ("web", "api"); the column is the engine_kind enum
+            e.Property(x => x.Engine).HasConversion(v => Enum.Parse<EngineKind>(v, true), v => v.ToString().ToLowerInvariant());
+        });
         b.Entity<CaseDependency>(e => { e.ToTable("case_dependency"); e.HasKey(x => new { x.CaseId, x.DependsOnCaseId }); });
         b.Entity<TestStep>(e =>
         {
@@ -123,11 +151,15 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
         b.Entity<RunSuite>().ToTable("run_suite");
         b.Entity<RunSuiteCase>(e => { e.ToTable("run_suite_case"); e.HasKey(x => new { x.SuiteId, x.CaseId }); });
         b.Entity<AssetVersion>(e => { e.ToTable("asset_version"); Json(e.Property(x => x.Content)); });
+        b.Entity<ChangeSet>(e => { e.ToTable("change_set"); Json(e.Property(x => x.BaseVersions)); });
+        b.Entity<ChangeSetItem>(e => { e.ToTable("change_set_item"); Json(e.Property(x => x.Content)); });
 
         b.Entity<ExecutionAgent>(e => { e.ToTable("execution_agent"); Json(e.Property(x => x.Capabilities)); });
         b.Entity<ExecutionRun>(e =>
         {
             e.ToTable("execution");
+            // a sharded run's parent is inserted before its children
+            e.HasOne<ExecutionRun>().WithMany().HasForeignKey(x => x.ParentExecutionId);
             Json(e.Property(x => x.Selection));
             Json(e.Property(x => x.Counts));
             Json(e.Property(x => x.Job));
@@ -139,7 +171,22 @@ public sealed class AtimthaDbContext(DbContextOptions<AtimthaDbContext> options)
             Json(e.Property(x => x.LastPage));
             Json(e.Property(x => x.Discoveries));
         });
-        b.Entity<HealingEvent>().ToTable("healing_event");
+        // the relationship tells EF to insert a result before its healing events (the SQL keys are composite with
+        // organization_id; this mapping only orders the inserts of one SaveChanges)
+        b.Entity<HealingEvent>(e => { e.ToTable("healing_event"); e.HasOne<TestResult>().WithMany().HasForeignKey(x => x.TestResultId); });
+        b.Entity<Evidence>().ToTable("evidence");
+        b.Entity<ExecutionArtifact>().ToTable("execution_artifact");
+        b.Entity<Identity.OrganizationSetting>(e => { e.ToTable("organization_setting"); e.HasKey(x => new { x.OrganizationId, x.Key }); Json(e.Property(x => x.Value)); });
+        b.Entity<RunSchedule>(e => { e.ToTable("run_schedule"); Json(e.Property(x => x.Selection)); });
+
+        b.Entity<Integration>(e => { e.ToTable("integration"); Json(e.Property(x => x.Config)); });
+        b.Entity<IntegrationIssue>().ToTable("integration_issue");
+        b.Entity<NotificationChannel>().ToTable("notification_channel");
+        b.Entity<NotificationDelivery>().ToTable("notification_delivery");
+        b.Entity<CiToken>().ToTable("ci_token");
+        b.Entity<Workspaces.BrandingProfile>().ToTable("branding_profile");
+        // no primary key in SQL (unique key + nullable organisation): read-only here
+        b.Entity<FeatureFlag>(e => { e.ToTable("feature_flag"); e.HasNoKey(); });
 
         ApplySnakeCase(b);
     }

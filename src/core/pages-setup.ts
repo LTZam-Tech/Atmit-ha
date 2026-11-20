@@ -33,5 +33,7 @@ export function requiredSessions(repo = loadRepository(), app = currentApp()): s
       for (const m of fs.readFileSync(path.join(d, f), 'utf8').matchAll(re)) if (m[1] !== 'none') users.add(m[1]);
     }
   }
+  // sessions a job asks for explicitly (an "explore" job signing in as a test user)
+  for (const u of (process.env.EXTRA_SESSIONS ?? '').split(',').map((x) => x.trim())) if (/^[\w-]+$/.test(u) && u !== 'none') users.add(u);
   return [...users];
 }

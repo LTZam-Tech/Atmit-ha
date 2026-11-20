@@ -1,0 +1,56 @@
+{{- $name := include "atimtha.name" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-web
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "atimtha.labels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+    spec:
+      {{- include "atimtha.pod" . | nindent 6 }}
+      containers:
+        - name: web
+          image: {{ include "atimtha.image" (dict "root" . "name" "web") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            # written into config.js and the Content-Security-Policy at start (web/docker/05-atimtha-config.envsh)
+            - { name: ATIMTHA_OIDC_ISSUER, value: {{ .Values.oidc.issuer | quote }} }
+            - { name: ATIMTHA_OIDC_CLIENT_ID, value: {{ .Values.oidc.webClientId | quote }} }
+            - { name: ATIMTHA_OIDC_SCOPE, value: {{ .Values.oidc.scope | quote }} }
+            # nginx forwards /api to the platform API
+            - { name: ATIMTHA_API_UPSTREAM, value: {{ printf "http://%s-api:8080" $name | quote }} }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-web
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    {{- include "atimtha.selector" (dict "root" . "component" "web") | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }

@@ -7,6 +7,8 @@ using Atimtha.Api.Infrastructure;
 
 namespace Atimtha.Api.TestAssets;
 
+using Api = Atimtha.Api.Infrastructure.Api;
+
 /// <summary>
 /// Imports a 0.1.0 project snapshot (contracts/project-snapshot.schema.json) into the platform tables (backlog §5
 /// "migration utilities for existing YAML/JSON projects"). Structural checks happen here; the engine's own validator
@@ -37,8 +39,8 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
 
     // Rows are saved in dependency phases (1 project → 7 versions): the context does not model these foreign keys,
     // and pages and elements reference each other, so one SaveChanges could insert a row before its parent.
-    private readonly List<object>[] staged = Enumerable.Range(0, 8).Select(_ => new List<object>()).ToArray();
-    private readonly List<Action>[] later = Enumerable.Range(0, 8).Select(_ => new List<Action>()).ToArray();
+    private readonly List<object>[] staged = Enumerable.Range(0, 9).Select(_ => new List<object>()).ToArray();
+    private readonly List<Action>[] later = Enumerable.Range(0, 9).Select(_ => new List<Action>()).ToArray();
 
     private void Stage(int phase, object entity) => staged[phase].Add(entity);
     private void Later(int phase, Action update) => later[phase].Add(update);
@@ -169,7 +171,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
             };
             if (auth is not null and not "none" && page.AuthUserId is null) Problems.Add($"page {pageKey}: auth user \"{auth}\" is not defined");
             pages[pageKey] = page.Id;
-            Stage(2, page);
+            Stage(3, page);   // after the test users it may sign in as
 
             var defaultStrategy = Str((p["settings"] as JsonObject)?["defaultStrategy"]) ?? "testid";
             var list = new List<(Element, string?)>();
@@ -202,12 +204,12 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
                     foreach (var fb in d["fallback"] as JsonArray ?? [])
                     {
                         if (fb is JsonObject f)
-                            Stage(4, new LocatorFallback { Id = Guid.NewGuid(), OrganizationId = organizationId, ElementId = el.Id, Position = fallbackPosition++, Strategy = f.ToJsonString() });
+                            Stage(5, new LocatorFallback { Id = Guid.NewGuid(), OrganizationId = organizationId, ElementId = el.Id, Position = fallbackPosition++, Strategy = f.ToJsonString() });
                     }
                 }
                 else { Problems.Add($"page {pageKey}, element {elKey}: must be a string or an object"); continue; }
                 elements[(pageKey, elKey)] = el.Id;
-                Stage(3, el);
+                Stage(4, el);
                 list.Add((el, within));
             }
             pending.Add((page, Str(p["readyWhen"]), list));
@@ -218,13 +220,13 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
         {
             if (readyWhen is not null)
             {
-                if (elements.TryGetValue((page.Key, readyWhen), out var r)) Later(4, () => page.ReadyWhenElementId = r);
+                if (elements.TryGetValue((page.Key, readyWhen), out var r)) Later(5, () => page.ReadyWhenElementId = r);
                 else Problems.Add($"page {page.Key}: readyWhen \"{readyWhen}\" is not one of its elements");
             }
             foreach (var (el, within) in list)
             {
                 if (within is null) continue;
-                if (elements.TryGetValue((page.Key, within), out var w)) Later(4, () => el.WithinElementId = w);
+                if (elements.TryGetValue((page.Key, within), out var w)) Later(5, () => el.WithinElementId = w);
                 else Problems.Add($"page {page.Key}, element {el.Key}: within \"{within}\" is not on the page");
             }
         }
@@ -239,7 +241,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
             var from = Str(edge?["from"]);
             var to = Str(edge?["to"]);
             if (from is null || to is null || !pages.TryGetValue(from, out var f) || !pages.TryGetValue(to, out var t)) { Problems.Add($"navigation edge {i}: unknown page"); continue; }
-            Stage(4, new NavigationEdge { Id = Guid.NewGuid(), OrganizationId = organizationId, ProjectId = project.Id, FromPageId = f, ToPageId = t, Steps = edge!["steps"]?.ToJsonString() ?? "[]" });
+            Stage(5, new NavigationEdge { Id = Guid.NewGuid(), OrganizationId = organizationId, ProjectId = project.Id, FromPageId = f, ToPageId = t, Steps = edge!["steps"]?.ToJsonString() ?? "[]" });
         }
     }
 
@@ -256,7 +258,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
             return;
         }
         var success = login["success"] as JsonObject;
-        Stage(4, new LoginConfig
+        Stage(5, new LoginConfig
         {
             ProjectId = project.Id, OrganizationId = organizationId, PageId = pageId,
             UsernameElementId = u.Value, PasswordElementId = p.Value, SubmitElementId = s.Value,
@@ -292,7 +294,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
             if (startPage is not null && tc.StartPageId is null) Problems.Add($"case {caseKey}: page \"{startPage}\" is not defined");
             if (user is not null and not "none" && tc.StartUserId is null) Problems.Add($"case {caseKey}: user \"{user}\" is not defined");
             cases[caseKey] = tc.Id;
-            Stage(5, tc);
+            Stage(6, tc);
 
             ImportSteps(tc, "", c["steps"] as JsonArray, caseKey);
             foreach (var (outcome, list) in c["outcomes"] as JsonObject ?? [])
@@ -308,12 +310,12 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
         {
             foreach (var d in dependsOn)
             {
-                if (cases.TryGetValue(d, out var dep) && dep != tc.Id) Stage(6, new CaseDependency { OrganizationId = organizationId, CaseId = tc.Id, DependsOnCaseId = dep });
+                if (cases.TryGetValue(d, out var dep) && dep != tc.Id) Stage(7, new CaseDependency { OrganizationId = organizationId, CaseId = tc.Id, DependsOnCaseId = dep });
                 else Problems.Add($"case {tc.Key}: dependsOn \"{d}\" is not a case");
             }
             if (continueFrom is not null)
             {
-                if (cases.TryGetValue(continueFrom, out var cf)) Later(6, () => tc.ContinueFromCaseId = cf);
+                if (cases.TryGetValue(continueFrom, out var cf)) Later(7, () => tc.ContinueFromCaseId = cf);
                 else Problems.Add($"case {tc.Key}: continueFrom \"{continueFrom}\" is not a case");
             }
         }
@@ -348,7 +350,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
                     elementParams = parameters.ToJsonString();
                 }
             }
-            Stage(6, new TestStep
+            Stage(7, new TestStep
             {
                 Id = Guid.NewGuid(), OrganizationId = organizationId, CaseId = tc.Id, Outcome = outcome, Position = position++,
                 Action = action, ElementId = elementId, ElementParams = elementParams, Body = step.ToJsonString(), Name = Str(step["name"]),
@@ -375,7 +377,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
                 Outcome = Str(r["outcome"]), Tags = Strings(r["tags"]), Skip = Bool(r["skip"]), Fields = fields.ToJsonString(),
             };
             rows[(tc.Id, key)] = row.Id;
-            Stage(6, row);
+            Stage(7, row);
         }
     }
 
@@ -385,7 +387,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
         {
             if (node is not JsonObject f || Str(f["flow"]) is not { } title) { Problems.Add($"workflow {flowKey}: \"flow\" (its name) is required"); continue; }
             var wf = new Workflow { Id = Guid.NewGuid(), OrganizationId = organizationId, ProjectId = project.Id, Key = flowKey, Title = title, Description = Str(f["description"]), Module = Str(f["module"]), Tags = Strings(f["tags"]) };
-            Stage(6, wf); flows[flowKey] = wf.Id;
+            Stage(7, wf); flows[flowKey] = wf.Id;
             var position = 1;
             foreach (var stepNode in f["steps"] as JsonArray ?? [])
             {
@@ -395,7 +397,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
                 var asUser = Str(stepNode?["as"]);
                 Guid? rowId = rowKey is not null && rows.TryGetValue((caseId, rowKey), out var rid) ? rid : null;
                 if (rowKey is not null && rowId is null) Problems.Add($"workflow {flowKey}, step {position}: row \"{rowKey}\" not found");
-                Stage(7, new WorkflowStep
+                Stage(8, new WorkflowStep
                 {
                     Id = Guid.NewGuid(), OrganizationId = organizationId, WorkflowId = wf.Id, Position = position++,
                     CaseId = caseId, DataRowId = rowId,
@@ -412,10 +414,10 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
         {
             var s = node as JsonObject;
             var suite = new RunSuite { Id = Guid.NewGuid(), OrganizationId = organizationId, ProjectId = project.Id, Key = name, Description = Str(s?["description"]), Modules = Strings(s?["modules"]), Tags = Strings(s?["tags"]) };
-            Stage(6, suite);
+            Stage(7, suite);
             foreach (var c in Strings(s?["cases"]))
             {
-                if (cases.TryGetValue(c, out var caseId)) Stage(7, new RunSuiteCase { OrganizationId = organizationId, SuiteId = suite.Id, CaseId = caseId });
+                if (cases.TryGetValue(c, out var caseId)) Stage(8, new RunSuiteCase { OrganizationId = organizationId, SuiteId = suite.Id, CaseId = caseId });
                 else Problems.Add($"suite {name}: case \"{c}\" not found");
             }
         }
@@ -426,7 +428,7 @@ public sealed partial class SnapshotImporter(AtimthaDbContext db, Guid organizat
     private void Version(Project project, AssetType type, Guid assetId, JsonNode content)
     {
         var json = content.ToJsonString();
-        Stage(7, new AssetVersion
+        Stage(8, new AssetVersion
         {
             Id = Guid.NewGuid(), OrganizationId = organizationId, ProjectId = project.Id, AssetType = type, AssetId = assetId,
             Version = 1, Content = json, ContentSha256 = Sha256(json), CreatedBy = userId, CreatedAt = now,

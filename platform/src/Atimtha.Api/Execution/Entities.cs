@@ -62,7 +62,15 @@ public sealed class ExecutionRun
     public string? Job { get; set; }
     public bool CancelRequested { get; set; }
     public short RequeueCount { get; set; }
+    /// <summary>set when a schedule started the run (db/migrations/0006)</summary>
+    public Guid? ScheduleId { get; set; }
+    /// <summary>set when a CI pipeline started the run (db/migrations/0008)</summary>
+    public Guid? CiTokenId { get; set; }
     public string? Error { get; set; }
+    /// <summary>sharded runs (db/migrations/0011): the parent holds no job; each child runs slice ShardIndex of ShardTotal</summary>
+    public Guid? ParentExecutionId { get; set; }
+    public short? ShardIndex { get; set; }
+    public short? ShardTotal { get; set; }
 }
 
 public sealed class TestResult

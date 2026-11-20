@@ -44,11 +44,13 @@ export default class SmartReporter implements Reporter {
   private rows = new Map<string, TestRow>();
 
   constructor(opts: Options = {}) {
-    this.out = path.resolve(opts.outputFolder ?? 'reports/smart-report');
+    // REPORT_OUTPUT: where the execution agent wants the report (its job folder)
+    this.out = path.resolve(process.env.REPORT_OUTPUT ?? opts.outputFolder ?? 'reports/smart-report');
     this.title = opts.title ?? 'Automation Smart Report';
     // REPORT_OPEN env wins over config; never auto-open on CI
     this.open = process.env.CI ? 'never' : ((process.env.REPORT_OPEN as OpenMode) ?? opts.open ?? 'always');
-    this.history = opts.history !== false && !process.env.DETECT_LAST; // detection re-runs are not real runs
+    // detection re-runs are not real runs; REPORT_HISTORY=0: the platform keeps the history (agent runs)
+    this.history = opts.history !== false && !process.env.DETECT_LAST && process.env.REPORT_HISTORY !== '0';
   }
 
   printsToStdio() { return false; }

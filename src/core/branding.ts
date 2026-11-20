@@ -53,6 +53,14 @@ export function saveProfiles(profiles: Record<string, BrandingProfile>) {
 }
 
 export function profileFor(key?: string): BrandingProfile {
+  // a run started from the platform brings the project's profile with the job (agent/agent.ts)
+  const fromJob = process.env.ATIMTHA_BRANDING_FILE;
+  if (fromJob && fs.existsSync(fromJob)) {
+    try {
+      const p = JSON.parse(fs.readFileSync(fromJob, 'utf8')) as BrandingProfile;
+      if (p?.name) return p;
+    } catch { /* fall back to the local profiles */ }
+  }
   const all = loadProfiles();
   return (key && all[key]) || all.default || Object.values(all)[0] || DEFAULT.default;
 }

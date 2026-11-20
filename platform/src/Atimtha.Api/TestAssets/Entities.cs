@@ -205,6 +205,39 @@ public sealed class RunSuiteCase
     public Guid CaseId { get; set; }
 }
 
+public enum ChangeStatus { Draft, Submitted, Approved, Rejected, Merged }
+public enum ChangeSource { Central, Local }
+
+/// <summary>Reviewed edits (ADR-0007): central edits and offline drafts alike.</summary>
+public sealed class ChangeSet
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid ProjectId { get; set; }
+    public string Title { get; set; } = "";
+    public ChangeStatus Status { get; set; } = ChangeStatus.Submitted;
+    public ChangeSource Source { get; set; } = ChangeSource.Central;
+    public string BaseVersions { get; set; } = "{}";
+    public Guid CreatedBy { get; set; }
+    public Guid? ReviewedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? DecidedAt { get; set; }
+    public string? DecisionNote { get; set; }
+}
+
+public sealed class ChangeSetItem
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid ChangeSetId { get; set; }
+    public AssetType AssetType { get; set; }
+    public string AssetKey { get; set; } = "";
+    public Guid? AssetId { get; set; }
+    public int? BaseVersion { get; set; }
+    public string Content { get; set; } = "{}";
+    public string ContentSha256 { get; set; } = "";
+}
+
 /// <summary>Immutable snapshot of one asset (ADR-0012): content is the 0.1.0 YAML as JSON.</summary>
 public sealed class AssetVersion
 {

@@ -15,6 +15,9 @@ public sealed class DevelopmentAuthenticationHandler(
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string Scheme = "Development";
+    /// <summary>X-Dev-Amr: comma-separated amr values, standing in for an identity provider's claim (local checks of auth.requireMfa)</summary>
+    public const string AmrHeader = "X-Dev-Amr";
+    public const string AmrSimulatedClaim = "atimtha:dev_amr";
     public const string Header = "X-Dev-User";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -29,6 +32,12 @@ public sealed class DevelopmentAuthenticationHandler(
             new Claim("email", email),
             new Claim(UserResolver.ProviderClaim, "dev"),
         ], Scheme);
+        // X-Dev-Amr: pwd | pwd,otp | mfa … — what an identity provider would report in amr (local checks only)
+        if (Request.Headers[AmrHeader].FirstOrDefault() is { Length: > 0 and <= 100 } amr)
+        {
+            identity.AddClaim(new Claim(AmrSimulatedClaim, "1"));
+            foreach (var v in amr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) identity.AddClaim(new Claim("amr", v));
+        }
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));
     }
 }

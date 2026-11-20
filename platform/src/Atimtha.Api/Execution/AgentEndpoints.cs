@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atimtha.Api.Execution;
 
+using Api = Atimtha.Api.Infrastructure.Api;
+
 public sealed record CreateAgentRequest(string? Name, string? Kind, string[]? Engines);
 public sealed record AgentDto(Guid Id, string Name, string Kind, string Status, JsonNode? Capabilities, string? Version, DateTimeOffset? LastHeartbeatAt, DateTimeOffset RegisteredAt);
 public sealed record CreatedAgentDto(AgentDto Agent, string Token);
@@ -24,6 +26,9 @@ public static class AgentEndpoints
         .Build();
 
     private const int MaxEventsPerCall = 500;
+    public const int MaxSlots = 8;
+    /// <summary>how long a claimed job (and its job token) stays valid</summary>
+    public static readonly TimeSpan JobLifetime = TimeSpan.FromHours(6);
 
     public static IEndpointRouteBuilder MapAgents(this IEndpointRouteBuilder app, RouteGroupBuilder api)
     {
@@ -31,10 +36,12 @@ public static class AgentEndpoints
         admin.MapGet("/", List);
         admin.MapPost("/", Create);
         admin.MapDelete("/{agentId:guid}", Revoke);
+        admin.MapPost("/{agentId:guid}/rotate-token", RotateToken);
 
         var agent = app.MapGroup("/api/agent/v1").WithTags("Agent protocol").RequireAuthorization(AgentPolicy);
         agent.MapPost("/heartbeat", Heartbeat);
         agent.MapPost("/jobs/claim", Claim);
+        agent.MapGet("/signing-key", SigningKey);
         agent.MapPost("/jobs/{executionId:guid}/events", Events);
         return app;
     }
@@ -54,7 +61,7 @@ public static class AgentEndpoints
         var v = new Api.Validation()
             .Text(body.Name, "name", 100)
             .Require(kind is not null, "kind", "Use central, local or private.")
-            .Require(engines.All(e => e is "web" or "api"), "engines", "1.0 supports web and api.");
+            .Require(engines.All(global::Atimtha.Api.Execution.Engines.IsKnown), "engines", "Use web, api, mobile and/or performance.");
         if (!v.IsValid) return v.Problem();
 
         var token = AgentAuthenticationHandler.NewToken();
@@ -91,10 +98,30 @@ public static class AgentEndpoints
         return Results.NoContent();
     }
 
+    /// <summary>
+    /// A new token for an agent (rotation, or a leaked token): the old one stops working at once. The agent keeps its
+    /// identity, history and running job; it needs the new token on its next call.
+    /// </summary>
+    private static async Task<IResult> RotateToken(Guid agentId, AtimthaDbContext db, AuditWriter audit, CancellationToken ct)
+    {
+        var agent = await db.Agents.FirstOrDefaultAsync(a => a.Id == agentId, ct);
+        if (agent is null) return Api.NotFound("The agent");
+        if (agent.Status == AgentStatus.Revoked) return Api.Conflict("A revoked agent cannot get a new token: register a new agent.");
+        var token = AgentAuthenticationHandler.NewToken();
+        agent.TokenHash = AgentAuthenticationHandler.HashToken(token);
+        audit.Add("agent.rotate_token", "execution_agent", agent.Id, new { agent.Name });
+        await db.SaveChangesAsync(ct);
+        return Results.Ok(new CreatedAgentDto(ToDto(agent), token));
+    }
+
     // ---------------------------------------------------------------- agent protocol
+
+    private static IResult SigningKey(JobSigner signer) =>
+        Results.Ok(new { keyId = signer.KeyId, algorithm = "ES256", publicKeyPem = signer.PublicKeyPem, ephemeral = signer.Ephemeral });
 
     private static async Task<IResult> Heartbeat(HeartbeatRequest body, HttpContext http, AtimthaDbContext db, CancellationToken ct)
     {
+        if (AgentAuthenticationHandler.JobId(http.User) is not null) return Api.Forbidden("A job token only reports on its own job.");
         var agent = await CurrentAgent(http, db, ct);
         if (agent is null) return Results.Unauthorized();
         agent.LastHeartbeatAt = DateTimeOffset.UtcNow;
@@ -106,28 +133,44 @@ public static class AgentEndpoints
             var allowed = Engines(agent);
             var now = reported.Select(n => n?.GetValue<string>()?.ToLowerInvariant()).Where(e => e is not null && allowed.Contains(e)).Select(e => e!).ToArray();
             caps["engines"] = new JsonArray(now.Select(e => (JsonNode)e).ToArray());
+            // parallel jobs this agent runs (ATIMTHA_AGENT_SLOTS), 1 to 8
+            caps["slots"] = caps["slots"] is JsonValue sv && sv.TryGetValue<int>(out var slots) ? Math.Clamp(slots, 1, MaxSlots) : 1;
             agent.Capabilities = caps.ToJsonString();
         }
         await db.SaveChangesAsync(ct);
+        var since = DateTimeOffset.UtcNow.AddHours(-1);
         var cancel = await db.Executions.AsNoTracking()
-            .Where(e => e.AgentId == agent.Id && e.CancelRequested && (e.Status == ExecutionStatus.Assigned || e.Status == ExecutionStatus.Running))
+            .Where(e => e.AgentId == agent.Id && e.CancelRequested &&
+                (e.Status == ExecutionStatus.Assigned || e.Status == ExecutionStatus.Running || (e.Status == ExecutionStatus.Error && e.FinishedAt > since)))
             .Select(e => e.Id).ToListAsync(ct);
         return Results.Ok(new { cancel });
     }
 
-    private static async Task<IResult> Claim(HttpContext http, AtimthaDbContext db, IJobQueue queue, CancellationToken ct)
+    private static async Task<IResult> Claim(HttpContext http, AtimthaDbContext db, IJobQueue queue, JobSigner signer, JobTokens tokens, PlatformMetrics metrics,
+        Identity.OrganizationSettings settings, CancellationToken ct)
     {
+        if (AgentAuthenticationHandler.JobId(http.User) is not null) return Api.Forbidden("A job token cannot claim jobs.");
         var agent = await CurrentAgent(http, db, ct);
         if (agent is null) return Results.Unauthorized();
         agent.LastHeartbeatAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        var executionId = await queue.ClaimAsync(agent.Id, Engines(agent), ct);
+        var executionId = await queue.ClaimAsync(agent.Id, Engines(agent), Slots(agent), ct);
+        metrics.Claim(executionId is not null);
         if (executionId is null) return Results.NoContent();
         var run = await db.Executions.AsNoTracking().FirstAsync(e => e.Id == executionId, ct);
         var job = JsonNode.Parse(run.Job ?? "{}")!.AsObject();
-        job["expiresAt"] = DateTimeOffset.UtcNow.AddHours(6).ToString("O");
-        return Results.Json(job);
+        // the job (and its token) lasts at least as long as the organisation lets a run go on, plus a margin for uploads
+        var maxRun = TimeSpan.FromMinutes(await settings.GetAsync(run.OrganizationId, Identity.OrganizationSettings.MaxRunMinutes, ct) + 30);
+        var expires = DateTimeOffset.UtcNow.Add(maxRun > JobLifetime ? maxRun : JobLifetime);
+        job["expiresAt"] = expires.ToString("O");
+        // the job is bound to the agent that claimed it, then signed over the exact bytes sent
+        job["agentId"] = agent.Id.ToString();
+        // what the test runner reports with: this execution only, until the job expires
+        job["jobToken"] = tokens.Mint(run.Id, agent.Id, run.OrganizationId, expires);
+        var body = job.ToJsonString();
+        http.Response.Headers[JobSigner.Header] = signer.Sign(body);
+        return Results.Text(body, "application/json", System.Text.Encoding.UTF8);
     }
 
     private static async Task<IResult> Events(Guid executionId, JsonArray events, HttpContext http, AtimthaDbContext db, CancellationToken ct)
@@ -137,14 +180,18 @@ public static class AgentEndpoints
         if (events.Count > MaxEventsPerCall) return Results.Problem(statusCode: 413, title: "Too many events", detail: $"Send at most {MaxEventsPerCall} events per call.");
 
         var run = await db.Executions.FirstOrDefaultAsync(e => e.Id == executionId, ct);
-        // a job belongs to the agent that claimed it; any other agent sees "not found"
-        if (run is null || run.AgentId != agent.Id) return Api.NotFound("The job");
+        // a job belongs to the agent that claimed it (and a job token to its own job); anyone else sees "not found"
+        if (run is null || run.AgentId != agent.Id || !AgentAuthenticationHandler.MayReport(http.User, executionId)) return Api.NotFound("The job");
         if (run.Status is ExecutionStatus.Passed or ExecutionStatus.Failed or ExecutionStatus.Cancelled or ExecutionStatus.Error)
             return Results.Ok(new { cancel = true, reason = "finished" });
 
         agent.LastHeartbeatAt = DateTimeOffset.UtcNow;
         var caseIds = await db.Cases.AsNoTracking().Where(c => c.ProjectId == run.ProjectId).ToDictionaryAsync(c => c.Key, c => c.Id, ct);
         var problems = new List<string>();
+        // a batch sent again after a lost response must not add the same results twice
+        var named = events.OfType<JsonObject>().Select(ev => Guid.TryParse(SnapshotImporter.Str(ev["id"]), out var g) ? g : Guid.Empty)
+            .Where(g => g != Guid.Empty).ToList();
+        var known = (await db.Results.AsNoTracking().Where(r => named.Contains(r.Id)).Select(r => r.Id).ToListAsync(ct)).ToHashSet();
 
         foreach (var node in events)
         {
@@ -156,6 +203,7 @@ public static class AgentEndpoints
                     run.StartedAt ??= DateTimeOffset.UtcNow;
                     break;
                 case "test.finished":
+                    if (Guid.TryParse(SnapshotImporter.Str(ev["id"]), out var named1) && !known.Add(named1)) break;
                     if (ResultFrom(ev, run, caseIds, db, out var problem) is { } result) db.Results.Add(result);
                     else problems.Add(problem!);
                     break;
@@ -177,6 +225,8 @@ public static class AgentEndpoints
             }
         }
         await db.SaveChangesAsync(ct);
+        // a shard: its parent run follows (running, then the rolled-up result when the last shard finishes)
+        if (run.ParentExecutionId is { } parentId) await Shards.RollUpLockedAsync(db, parentId, ct);
         return Results.Ok(new { cancel = run.CancelRequested, problems });
     }
 
@@ -203,7 +253,8 @@ public static class AgentEndpoints
 
         var result = new TestResult
         {
-            Id = Guid.NewGuid(), OrganizationId = run.OrganizationId, ExecutionId = run.Id, CaseId = caseId, DataRowId = rowId,
+            Id = Guid.TryParse(SnapshotImporter.Str(ev["id"]), out var named) && named != Guid.Empty ? named : Guid.NewGuid(),
+            OrganizationId = run.OrganizationId, ExecutionId = run.Id, CaseId = caseId, DataRowId = rowId,
             Title = Truncate(title, 1000)!, Module = Truncate(SnapshotImporter.Str(ev["module"]), 300), Kind = SnapshotImporter.Str(ev["kind"]),
             Status = status.Value,
             Flaky = ev["flaky"] is JsonValue fv && fv.GetValueKind() == JsonValueKind.True,
@@ -257,6 +308,13 @@ public static class AgentEndpoints
                 : ["web"];
         }
         catch (JsonException) { return ["web"]; }
+    }
+
+    /// <summary>parallel jobs the agent reported (capabilities.slots), 1 when it never said</summary>
+    internal static int Slots(ExecutionAgent agent)
+    {
+        try { return JsonNode.Parse(agent.Capabilities)?["slots"] is JsonValue v && v.TryGetValue<int>(out var n) ? Math.Clamp(n, 1, MaxSlots) : 1; }
+        catch (JsonException) { return 1; }
     }
 
     private static AgentDto ToDto(ExecutionAgent a) => new(

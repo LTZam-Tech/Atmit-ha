@@ -9,6 +9,21 @@
   "properties": {
     "contract": { "const": "atimtha.project/1" },
     "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$" },
+    "branding": {
+      "type": ["object", "null"],
+      "description": "Platform exports only: the project's report branding profile (src/core/branding.ts shape; logo as a data URI)",
+      "properties": { "key": { "type": "string" }, "name": { "type": "string" } },
+      "required": ["name"]
+    },
+    "versions": {
+      "type": "object",
+      "description": "Platform exports only: the version of each page, case and workflow, so offline edits can be submitted as change sets against their base version (ADR-0007)",
+      "properties": {
+        "pages": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "cases": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "flows": { "type": "object", "additionalProperties": { "type": "integer" } }
+      }
+    },
     "app": { "type": "object", "description": "app.yml (src/core/app.schema.json), users and httpCredentials without password" },
     "messages": { "type": "object", "additionalProperties": { "type": "object", "additionalProperties": { "type": "string" } } },
     "pages": {

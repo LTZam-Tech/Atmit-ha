@@ -35,6 +35,10 @@ export interface AppConfig {
   languages: ('en' | 'ar')[];
   defaultEnv?: string;
   branding?: string;
+  /** mobile engine: the Appium server and the app/device capabilities (src/core/mobile-engine) */
+  mobile?: { appiumUrl?: string; capabilities: Record<string, unknown>; waitTimeoutMs?: number };
+  /** API engine: named requests that steps reuse with `request: { use: name, …overrides }` */
+  api?: { requests?: Record<string, Record<string, unknown>> };
   environments: Record<string, AppEnvironment>;
   login?: {
     page: string;
@@ -108,6 +112,8 @@ export function loadApp(app = currentApp()): AppConfig {
     languages: raw.languages ?? ['en'],
     defaultEnv: raw.defaultEnv,
     branding: raw.branding,
+    mobile: raw.mobile,
+    api: raw.api,
     environments,
     login: raw.login,
     run: raw.run,

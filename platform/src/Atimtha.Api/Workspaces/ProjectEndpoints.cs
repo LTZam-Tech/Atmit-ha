@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atimtha.Api.Workspaces;
 
+using Api = Atimtha.Api.Infrastructure.Api;
+
 public sealed record ProjectDto(
     Guid Id, Guid WorkspaceId, string Key, string Name, string? Description, string TestIdAttribute, string[] Languages,
     string HealingPolicy, RunSettingsDto Run, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt)

@@ -16,6 +16,13 @@
  *     error:
  *       - status: { in: [400, 422] }
  *       - json: { path: $.errors[0].field, equals: "{{data.field}}" }
+ *
+ * Auth: { bearer } | { basic: { username, password } } | { apiKey: { in: header|query, name, value } }
+ *       | { oauth2: { tokenUrl, clientId, clientSecret, scope? } } (client credentials; the token is reused until it expires)
+ * Body: one of json | form | body | multipart: { field: "text" | { name, mimeType?, content | base64 } }
+ * Reuse: app.yml `api.requests: { login: { method: POST, url: /api/login, json: … } }`, then a step
+ *        `request: { use: login, json: { … } }` takes the named request and overrides what it lists
+ *        (headers and query are merged key by key).
  */
 import type { Step } from '../cases/model';
 
@@ -54,19 +61,14 @@ export function normalizeApiStep(raw: Record<string, unknown>, where: string): S
 
   switch (action) {
     case 'request': {
-      need(!!b, '"request" needs { method, url }');
-      need(typeof b!.url === 'string' && (b!.url as string).length > 0, '"request" needs a url');
-      const method = String(b!.method ?? 'GET').toUpperCase();
-      need((HTTP_METHODS as readonly string[]).includes(method), `method must be one of ${HTTP_METHODS.join(', ')}`);
-      const bodies = ['json', 'form', 'body'].filter((k) => k in b!);
-      need(bodies.length <= 1, 'use only one of json, form or body');
-      if ('headers' in b!) need(!!obj(b!.headers), '"headers" must be a map');
-      if ('query' in b!) need(!!obj(b!.query), '"query" must be a map');
-      if ('auth' in b!) {
-        const a = obj(b!.auth);
-        need(!!a && (('bearer' in a!) !== ('basic' in a!)), '"auth" needs either { bearer: token } or { basic: { username, password } }');
+      need(!!b, '"request" needs { method, url } or { use: <named request> }');
+      if ('use' in b!) {
+        need(/^\w[\w-]*$/.test(String(b!.use)), '"use" names a request of app.yml api.requests (letters, digits, _ and -)');
+        // the named request is merged at run time (resolveRequest); only what is written here can be checked now
+        checkRequest({ url: '/', ...b! }, where);
+        return { action: 'request' as never, name, api: { ...b!, ...(b!.method ? { method: String(b!.method).toUpperCase() } : {}) } };
       }
-      if ('as' in b!) need(/^\w+$/.test(String(b!.as)), '"as" (a name for this response) uses letters, digits and _');
+      const method = checkRequest(b!, where);
       return { action: 'request' as never, name, api: { ...b!, method } };
     }
     case 'status': {
@@ -106,3 +108,62 @@ export function normalizeApiStep(raw: Record<string, unknown>, where: string): S
     }
   }
 }
+
+/** the shape of a request (also run on a merged named request): returns the upper-case method */
+export function checkRequest(b: Record<string, unknown>, where: string): string {
+  const need = (ok: boolean, msg: string) => { if (!ok) throw new Error(`${where}: ${msg}`); };
+  need(typeof b.url === 'string' && (b.url as string).length > 0, '"request" needs a url');
+  const method = String(b.method ?? 'GET').toUpperCase();
+  need((HTTP_METHODS as readonly string[]).includes(method), `method must be one of ${HTTP_METHODS.join(', ')}`);
+  const bodies = ['json', 'form', 'body', 'multipart'].filter((k) => k in b && b[k] !== undefined);
+  need(bodies.length <= 1, 'use only one of json, form, body or multipart');
+  if ('headers' in b) need(!!obj(b.headers), '"headers" must be a map');
+  if ('query' in b) need(!!obj(b.query), '"query" must be a map');
+  if ('multipart' in b) {
+    const m = obj(b.multipart);
+    need(!!m, '"multipart" must be a map of field: value or field: { name, mimeType, content }');
+    for (const [field, v] of Object.entries(m!)) {
+      const f = obj(v);
+      if (!f) { need(['string', 'number', 'boolean'].includes(typeof v), `multipart field "${field}" must be text or a file { name, content }`); continue; }
+      need(typeof f.name === 'string' && f.name.length > 0, `multipart file "${field}" needs a name`);
+      need((typeof f.content === 'string') !== (typeof f.base64 === 'string'), `multipart file "${field}" needs content (text) or base64, not both`);
+    }
+  }
+  if ('auth' in b) {
+    const a = obj(b.auth);
+    const kinds = a ? ['bearer', 'basic', 'apiKey', 'oauth2'].filter((k) => k in a) : [];
+    need(kinds.length === 1, '"auth" needs either { bearer }, { basic: { username, password } }, { apiKey: { in, name, value } } or { oauth2: { tokenUrl, clientId, clientSecret } }');
+    if (kinds[0] === 'apiKey') {
+      const k = obj(a!.apiKey);
+      need(!!k && (k!.in === 'header' || k!.in === 'query') && typeof k!.name === 'string' && (k!.name as string).length > 0 && k!.value !== undefined,
+        '"apiKey" needs { in: header | query, name, value }');
+    }
+    if (kinds[0] === 'oauth2') {
+      const o = obj(a!.oauth2);
+      need(!!o && typeof o!.tokenUrl === 'string' && typeof o!.clientId === 'string' && typeof o!.clientSecret === 'string',
+        '"oauth2" needs { tokenUrl, clientId, clientSecret, scope? } (client credentials)');
+    }
+  }
+  if ('as' in b) need(/^\w+$/.test(String(b.as)), '"as" (a name for this response) uses letters, digits and _');
+  return method;
+}
+
+/**
+ * `request: { use: name, …overrides }` → the named request of app.yml (api.requests) with the overrides on top;
+ * headers and query are merged key by key, a body written in the step replaces the named one. Other steps pass through.
+ */
+export function resolveRequest(spec: Record<string, unknown>, requests: Record<string, unknown> | undefined, where: string): Record<string, unknown> {
+  if (!('use' in spec)) return spec;
+  const { use, ...over } = spec;
+  const base = obj(requests?.[String(use)]);
+  if (!base) throw new Error(`${where}: no request named "${String(use)}" in app.yml api.requests${requests ? ` (known: ${Object.keys(requests).join(', ') || 'none'})` : ''}`);
+  const bodies = ['json', 'form', 'body', 'multipart'];
+  const merged: Record<string, unknown> = { ...base };
+  if (bodies.some((k) => k in over)) for (const k of bodies) delete merged[k];
+  for (const [k, v] of Object.entries(over)) {
+    merged[k] = (k === 'headers' || k === 'query') && obj(base[k]) && obj(v) ? { ...obj(base[k]), ...obj(v) } : v;
+  }
+  merged.method = checkRequest(merged, where);
+  return merged;
+}
+

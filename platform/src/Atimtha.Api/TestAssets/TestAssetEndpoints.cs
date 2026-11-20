@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atimtha.Api.TestAssets;
 
+using Api = Atimtha.Api.Infrastructure.Api;
+
 public sealed record PageSummaryDto(string Key, string? Url, string OpenMode, int Elements, int Version);
 public sealed record CaseSummaryDto(string Key, string Title, string? Module, string Engine, string? Type, int Rows, int Steps, int Version);
 public sealed record ImportResultDto(ProjectDto Project, int Pages, int Elements, int Cases, int DataRows, int Workflows);
@@ -16,6 +18,7 @@ public static class TestAssetEndpoints
     public static RouteGroupBuilder MapTestAssets(this RouteGroupBuilder api)
     {
         api.MapPost("/workspaces/{workspaceKey}/projects/import", Import)
+            .WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(25L * 1024 * 1024))
             .RequireAuthorization(Permissions.Policy(Permissions.ProjectEdit)).WithTags("Projects");
 
         var p = api.MapGroup("/projects/{projectId:guid}").WithTags("Test assets");

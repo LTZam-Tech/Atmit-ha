@@ -1,0 +1,52 @@
+{{- if .Values.agent.enabled }}
+{{- $name := include "atimtha.name" . -}}
+# an execution agent in the cluster: it only calls out to the platform (through the web service, like any agent)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-agent
+  labels:
+    {{- include "atimtha.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  # replicas share one registered agent identity (its token); each runs its own slots
+  replicas: {{ .Values.agent.replicas }}
+  selector:
+    matchLabels:
+      {{- include "atimtha.selector" (dict "root" . "component" "agent") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "atimtha.labels" . | nindent 8 }}
+        app.kubernetes.io/component: agent
+    spec:
+      {{- include "atimtha.pod" . | nindent 6 }}
+      containers:
+        - name: agent
+          image: {{ include "atimtha.image" (dict "root" . "name" "agent") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - { name: ATIMTHA_PLATFORM_URL, value: {{ printf "http://%s-web:8080" $name | quote }} }
+            - name: ATIMTHA_AGENT_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ .Values.agent.existingSecret }}, key: agent-token } }
+            - { name: ATIMTHA_AGENT_SLOTS, value: {{ .Values.agent.slots | quote }} }
+            - { name: ATIMTHA_AGENT_ENGINES, value: {{ .Values.agent.engines | quote }} }
+            {{- with .Values.agent.jobPublicKey }}
+            - { name: ATIMTHA_JOB_KEY, value: {{ . | quote }} }
+            {{- end }}
+          volumeMounts:
+            # browsers need a larger /dev/shm than the container default
+            - { name: shm, mountPath: /dev/shm }
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+            # the image's user is named (pwuser); Kubernetes needs its number to enforce runAsNonRoot
+            runAsUser: {{ .Values.agent.runAsUser }}
+            runAsGroup: {{ .Values.agent.runAsUser }}
+      volumes:
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.agent.shmSize }}
+{{- end }}

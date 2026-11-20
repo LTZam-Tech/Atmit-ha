@@ -61,6 +61,12 @@ services:
       # requeues jobs of silent agents across organisations (owner role, BYPASSRLS)
       ConnectionStrings__Maintenance: Host=postgres;Database=atimtha;Username=atimtha_owner;Password=${ATIMTHA_OWNER_PASSWORD}
       Auth__Development__Enabled: "true"
+      # may create, rename and archive organisations
+      Platform__Admins: admin@atimtha.local
+      # Prometheus scrapes /metrics with this bearer token (development value)
+      Metrics__Token: dev-metrics-token
+    volumes:
+      - evidence:/var/lib/atimtha/evidence   # evidence files and branding logos
     ports: ["127.0.0.1:8080:8080"]
     depends_on:
       seed: { condition: service_completed_successfully }
@@ -68,3 +74,4 @@ services:
 
 volumes:
   pgdata:
+  evidence:

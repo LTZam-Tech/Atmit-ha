@@ -1,0 +1,23 @@
+#!/bin/sh
+# Sourced by the nginx image entrypoint before the templates are rendered (*.envsh files are sourced) — step 05 runs before 20-envsubst-on-templates.
+# 1. writes config.js (the identity provider the browser signs in with) from environment variables;
+# 2. exports ATIMTHA_CONNECT_SRC, the issuer's origin, for the Content-Security-Policy in default.conf.template.
+# sourced into the entrypoint shell: no "set -e" here (it would change the entrypoint); errors exit explicitly
+
+issuer="${ATIMTHA_OIDC_ISSUER:-}"
+client="${ATIMTHA_OIDC_CLIENT_ID:-atimtha-web}"
+scope="${ATIMTHA_OIDC_SCOPE:-openid profile email}"
+
+# values go into JavaScript: refuse anything that could break out of the string
+for v in "$issuer" "$client" "$scope"; do
+  case "$v" in *\"*|*\\*|*\<*|*\>*|*\'*) echo "atimtha: ATIMTHA_OIDC_* values must not contain quotes, backslashes or angle brackets" >&2; exit 1 ;; esac
+done
+case "$issuer" in ""|https://*) ;; *) echo "atimtha: ATIMTHA_OIDC_ISSUER must be an https:// address" >&2; exit 1 ;; esac
+
+printf 'window.__ATIMTHA_CONFIG__ = { "oidcIssuer": "%s", "oidcClientId": "%s", "oidcScope": "%s" };\n' "$issuer" "$client" "$scope" \
+  > /usr/share/nginx/html/config.js
+
+# https://idp.example.com/realms/x → https://idp.example.com
+origin=$(printf '%s' "$issuer" | sed -E 's#^(https://[^/]+).*#\1#')
+export ATIMTHA_CONNECT_SRC="'self'${origin:+ $origin}"
+export ATIMTHA_API_UPSTREAM="${ATIMTHA_API_UPSTREAM:-http://api:8080}"

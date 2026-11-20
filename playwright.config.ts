@@ -54,7 +54,7 @@ export default defineConfig({
 
   // The bundled demo app starts automatically when the environment has startDemoApp: true (app.yml).
   webServer: environment.startDemoApp
-    ? { command: 'node demo-app/server.js', url: environment.baseURL, reuseExistingServer: !isCI, timeout: 15_000 }
+    ? { command: 'node demo-app/server.js', url: environment.baseURL, reuseExistingServer: !isCI || process.env.ATIMTHA_DEMO_SHARED === '1', timeout: 15_000 }
     : undefined,
 
   metadata: { app: environment.app, env: environment.name, target: TARGET, locale: environment.locale, seed: environment.seed },
