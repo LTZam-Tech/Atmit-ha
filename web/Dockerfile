@@ -17,8 +17,10 @@ COPY --from=build /src/dist/atimtha-web/browser /usr/share/nginx/html
 COPY docker/default.conf.template docker/security-headers.inc.template /etc/nginx/templates/
 COPY docker/05-atimtha-config.envsh /docker-entrypoint.d/
 USER root
-# config.js is rewritten at start by the (non-root) nginx user
-RUN chmod 0755 /docker-entrypoint.d/05-atimtha-config.envsh \
+# security fixes published after the base image was built (e.g. OpenSSL, Brotli); config.js is rewritten at start
+# by the (non-root) nginx user
+RUN apk upgrade --no-cache \
+    && chmod 0755 /docker-entrypoint.d/05-atimtha-config.envsh \
     && rm -f /etc/nginx/conf.d/default.conf \
     && chown 101:101 /usr/share/nginx/html/config.js
 USER 101

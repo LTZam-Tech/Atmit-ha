@@ -26,8 +26,8 @@ elements:
       - id: login-button
       - css: "form button[type=submit]"
 
-  # Primary is the test id we asked the devs to add (not there yet) →
-  # the fallback finds it and the Smart Report flags it as "healed".
+  # Primary is the test id the devs added; the fallbacks stay for when it changes
+  # (a run that needs them is flagged as "healed" in the Smart Report).
   forgotPassword:
     testid: forgot-password
     fallback:
