@@ -12,7 +12,8 @@ import { healingPolicy } from '../src/core/healing';
 
 const APP = currentApp();
 const app = loadApp(APP);
-const ENV = process.env.ENV ?? app.defaultEnv ?? Object.keys(app.environments)[0];
+// an empty ENV (CI passes the optional workflow input through as "") means "use the project default"
+const ENV = process.env.ENV || app.defaultEnv || Object.keys(app.environments)[0];
 const env = app.environments[ENV];
 if (!env) {
   throw new Error(`[config] Environment "${ENV}" not defined for app "${APP}". Available: ${Object.keys(app.environments).join(', ')} — run with ENV=<one of them>, or remove ENV to use the project default`);

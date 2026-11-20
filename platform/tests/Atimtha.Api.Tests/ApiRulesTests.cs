@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace Atimtha.Api.Tests;
 
+// inside Atimtha.Api.* the name "Api" means the namespace; the alias points it at the helper class
+using Api = Atimtha.Api.Infrastructure.Api;
+
 public sealed class ApiRulesTests
 {
     [Theory]

@@ -100,7 +100,7 @@ test('runner arguments: fixed runner and reporters, grep escaped', () => {
   const args = runnerArgs(job());
   assert.ok(args[0].endsWith(path.join('@playwright', 'test', 'cli.js')));
   assert.equal(args[1], 'test');
-  assert.equal(args[2], '--reporter=list,./reporters/agent-reporter.ts');
+  assert.equal(args[2], '--reporter=list,./reporters/agent-reporter.ts,./reporters/smart-reporter.ts');
   assert.equal(args[3], '--grep=(@smoke).*Login \\(valid\\)');
   assert.equal(args.length, 4);
 });

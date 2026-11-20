@@ -1,0 +1,4 @@
+# Known false positives (gitleaks fingerprints). Each entry must be a fake value used on purpose.
+# tests/unit/git-guard.test.ts: made-up AWS and BrowserStack keys that test the panel's own secret detector
+8fd8076e90b714a8cd34a9ebeaad0400901cf25a:tests/unit/git-guard.test.ts:aws-access-token:27
+8fd8076e90b714a8cd34a9ebeaad0400901cf25a:tests/unit/git-guard.test.ts:generic-api-key:29

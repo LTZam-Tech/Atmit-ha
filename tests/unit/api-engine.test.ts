@@ -39,7 +39,7 @@ test('API steps are validated with readable messages', () => {
   assert.equal(normalizeApiStep({ request: { url: '/x' } }, 's').api?.method, 'GET');
   assert.equal(normalizeApiStep({ save: { path: '$.id', as: 'orderId' } }, 's').as, 'orderId');
   assert.throws(() => normalizeApiStep({ request: { method: 'FETCH', url: '/x' } }, 'step 1'), /method must be one of/);
-  assert.throws(() => normalizeApiStep({ request: { url: '/x', json: {}, body: 'x' } }, 'step 1'), /only one of json, form or body/);
+  assert.throws(() => normalizeApiStep({ request: { url: '/x', json: {}, body: 'x' } }, 'step 1'), /only one of json, form, body or multipart/);
   assert.throws(() => normalizeApiStep({ request: { url: '/x', auth: { bearer: 't', basic: {} } } }, 'step 1'), /either/);
   assert.throws(() => normalizeApiStep({ json: { path: 'x', equals: 1 } }, 'step 2'), /path: \$/);
   assert.throws(() => normalizeApiStep({ json: { path: '$.a', equals: 1, contains: 1 } }, 'step 2'), /exactly one of/);

@@ -61,7 +61,7 @@ jobs:
           path: sbom-${{ matrix.name }}.cdx.json
           retention-days: 90
       - name: Vulnerability scan (fails on critical findings with a fix)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: atimtha/${{ matrix.name }}:ci
           severity: CRITICAL

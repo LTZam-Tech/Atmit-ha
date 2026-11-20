@@ -24,9 +24,9 @@ test('secret file names are recognised', () => {
 
 test('findSecrets spots keys and tokens anywhere', () => {
   assert.deepEqual(findSecrets('x.yml', '-----BEGIN RSA PRIVATE KEY-----\nabc'), ['private key']);
-  assert.deepEqual(findSecrets('x.yml', 'key: AKIAABCDEFGHIJKLMNOP'), ['AWS access key']);
+  assert.deepEqual(findSecrets('x.yml', 'key: AKIAABCDEFGHIJKLMNOP'), ['AWS access key']); // gitleaks:allow (fake test value)
   assert.deepEqual(findSecrets('x.yml', `t: ghp_${'a'.repeat(36)}`), ['GitHub token']);
-  assert.deepEqual(findSecrets('x.yml', 'BROWSERSTACK_ACCESS_KEY=abcdefABCDEF1234'), ['cloud browser key']);
+  assert.deepEqual(findSecrets('x.yml', 'BROWSERSTACK_ACCESS_KEY=abcdefABCDEF1234'), ['cloud browser key']); // gitleaks:allow (fake test value)
 });
 
 test('findSecrets flags literal passwords in app.yml but accepts placeholders', () => {
